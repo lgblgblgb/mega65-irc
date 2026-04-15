@@ -1,0 +1,13 @@
+.*.swp
+*~
+a.out
+tags
+.vscode
+.DS_Store
+*.tmp
+/build
+/irc
+/irc.lab
+/irc.map
+/irc.prg
+/backup
