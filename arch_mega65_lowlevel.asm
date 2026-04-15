@@ -73,12 +73,6 @@ stub_main:
 .BSS
 	.RES	1	; be sure BSS segment is at least one byte long
 
-;.SEGMENT "MYZP"
-;cursor_def_ptr:
-;	.RES	4
-
-cursor_def_ptr = $20
-
 ; ----------------------------------------------------------------------------
 .CODE
 ; ----------------------------------------------------------------------------
@@ -94,18 +88,8 @@ sys_init:
 	LDA	#.HIBYTE(irq_handler)
 	STA	$FFFF
 	; ---
-	LDA	#$00
-	STA	cursor_def_ptr
-	LDA	#$E0
-	STA	cursor_def_ptr+1
-	LDA	#$F7
-	STA	cursor_def_ptr+2
-	LDA	#$0F
-	STA	cursor_def_ptr+3
-	; ---
 	LDA	#$1B
 	STA	$D011
-	;LDA	#$26		; WE USE THE SECOND 2K OF ROM CHRSET!!!
 	LDA	#$24
 	STA	$D018
 	LDA	#$C9
@@ -129,16 +113,6 @@ sys_init:
 	LDA	#0
 	STA	$D020
 	STA	$D021
-
-
-	; character with ASCII zero will be used as cursor (beware: VIC-IV 16 pix height characters ant "interlaced")
-	LDA	#$FF
-	LDX	#7
-:	STA	vgafont,X
-	STA	vgafont + 2048,X
-	DEX
-	BPL	:-
-
 
 	STA	$D707		; triggers in-line enhanced mode DMA
 	.BYTE	$A		; enhanced option: F018A DMA list (shorter)
@@ -315,55 +289,32 @@ payload_size = * - payload
 ; ----------------------------------------------------------------------------
 
 
+rotchrs:
+	.BYTE "-\|/"
+
+
 nmi_handler:
 	RTI
 
-irq_handler:
+.PROC	irq_handler
 	PHA
 	PHX
 	PHY
 	PHZ
-	ASL	$D019
-
-
-	LDA	$25
-	INA
-	STA	$25
-	AND	#32
-	BNE	@nocur
-
-	LDA	$24
-	EOR	#$FF
-	STA	$24
-	LDZ	#7
-
-	INC	2048+80*25-1
-@cur:
-	LDY	#$E0
-	STY	$21
-	NOP
-	STA	($20),Z
-	LDY	#$E8
-	STY	$21
-	NOP
-	STA	($20),Z
-	DEZ
-	BPL	@cur
-@nocur:
-
-;	LDX	#MAP_X_ETHBIN
-;	JSR	map_do
-;@halt:
-;	INC	$D020
-;	JMP	@halt
-
-
+	ASL	$D019	; Acknowledge VIC interrupt
+	LDA	$D7FA
+	LSR	A
+	LSR	A
+	AND	#3
+	TAX
+	LDA	rotchrs, X
+	STA	$800 + 24*80 - 1
 	PLZ
 	PLY
 	PLX
 	PLA
 	RTI
-
+.ENDPROC
 
 
 

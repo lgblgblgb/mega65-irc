@@ -18,6 +18,7 @@ COBJS	= irc.o common.o
 #XEMU	= xemu-xmega65
 XEMU	= ~/prog_here/xemu-next/build/bin/xmega65.native
 ETHLOAD	= mega65_etherload
+C1541	= c1541
 BINUNIX	= irc
 BINMEGA	= irc.prg
 D81NAME	= bin/irc.d81
@@ -29,10 +30,9 @@ CFLAGS	= -DMEGA65 -O -Oi -Or -Os -t none --cpu 65c02 -r --standard c99
 LDFLAGS	= --config mega65.ld --mapfile irc.map -v -vm -Ln irc.lab
 ARCH	= mega65
 AROBJS	= arch_mega65_lowlevel.o arch_mega65.o net_mega65.o
-#SYSLIB	= /usr/share/cc65/lib/c64.lib
 SYSLIB	= /usr/share/cc65/lib/none.lib
 else
-CC	= gcc
+CC	= cc
 CFLAGS	= -O2 -Wall $(shell sdl2-config --cflags)
 LDFLAGS	= $(shell sdl2-config --libs)
 ARCH	= native
@@ -53,13 +53,15 @@ $(BDIR)/%.o: %.c
 	@if [ -f $(notdir $@) ]; then mv $(notdir $@) $@ ; fi
 
 $(BINUNIX): $(DOOBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	bash build_info.sh "$(CC)" $(BDIR)/build-info.c $(BDIR)/build-info.o ""
+	$(CC) -o $@ $^ $(BDIR)/build-info.o $(LDFLAGS)
 
 $(BDIR)/arch_mega65_lowlevel.o: arch_mega65_lowlevel.asm
 	$(CA65) -t none -o $@ $<
 
 $(BINMEGA): $(DOOBJS)
-	$(LD65) $(LDFLAGS) -o $@ $^ $(SYSLIB)
+	bash build_info.sh "$(CC)" $(BDIR)/build-info.c $(BDIR)/build-info.o "-t none"
+	$(LD65) $(LDFLAGS) -o $@ $^ $(BDIR)/build-info.o $(SYSLIB)
 
 mega65:
 	$(MAKE) $(BINMEGA)
@@ -73,15 +75,18 @@ run:
 	$(MAKE) $(BINUNIX)
 	./$(BINUNIX)
 
-publish:
-	$(MAKE) clean
-	$(MAKE) $(BINMEGA)
-	$(MAKE) $(BINUNIX)
-	cp $(BINMEGA) bin/
-	echo "format irc,dd d81 $(D81NAME).tmp 8\nwrite $(BINMEGA)" | c1541
+$(D81NAME): $(BINMEGA)
+	echo "format mega65-irc,dd d81 $(D81NAME).tmp 8\nwrite $(BINMEGA) irc\ndir" | $(C1541)
 	mv $(D81NAME).tmp $(D81NAME)
 
+publish:
+	$(MAKE) clean
+	$(MAKE) $(BINUNIX)
+	$(MAKE) $(BINMEGA)
+	$(MAKE) $(D81NAME)
+	cp $(BINMEGA) bin/
+
 clean:
-	rm -f $(BINUNIX) $(BINMEGA) build/native/*.o build/mega65/*.o $(D81NAME).tmp
+	rm -f $(BINUNIX) $(BINMEGA) build/*/*.o build/*/*.c $(D81NAME).tmp
 
 .PHONY: all mega65 xemu run clean publish

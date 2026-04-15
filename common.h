@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 #define STATUS_BG_COLOUR	2
 #define STATUS_FG_COLOUR	7
 
+#define input_string ((char*)screen + 24 * 80)
 
 extern byte text_colour;
 
@@ -35,5 +36,9 @@ extern void write_ip ( const byte *p );
 extern void write_ip_and_port ( const byte *ip, const word port );
 extern void press_a_key ( void );
 extern void wait ( word frames );
+extern void clear_input ( void );
+extern void add_input ( const byte c );
+
+extern const char build_info[];
 
 #endif

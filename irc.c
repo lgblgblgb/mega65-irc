@@ -16,69 +16,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include "arch.h"
 #include "common.h"
+#include "net.h"
 #include <string.h>
 
 
 static const char demo[] = "MEGA65 iRC";
 
+const byte default_irc_server[] = {192, 168, 0, 153};
+#define default_irc_port 6667
 
-static word inp_addr;
-
-
-void clear_input ( void )
-{
-	inp_addr = 24 * 80;
-	memset(screen + inp_addr, 32, 80);
-	screen[inp_addr] = 0;
-	colour[inp_addr] = CURSOR_COLOUR;
-}
-
-
-void add_input ( const byte c )
-{
-	if (c == 0x14 && inp_addr != 24 * 80) {
-		screen[inp_addr] = ' ';
-		inp_addr--;
-		screen[inp_addr] = 0;
-		colour[inp_addr] = CURSOR_COLOUR;
-	}
-	if (c >= 32 && c < 127 && inp_addr != 24 * 80 + 79) {
-		screen[inp_addr] = c;
-		colour[inp_addr] = INPUT_COLOUR;
-		inp_addr++;
-		screen[inp_addr] = 0;
-		colour[inp_addr] = CURSOR_COLOUR;
-	}
-}
-
-
-#define input_string ((char*)screen + 24 * 80)
-
-
-#ifdef MEGA65
-static void sprite_init ( void )
-{
-	// TODO: clean this up!!!
-	memset((void*)1024, 0, 1024);
-	memset((void*)1024, 0xFF, 56);
-	POKE(0xD000, 24);			// sprite X coordinate
-	POKE(0xD001, 43 + 24 * 8 - 1);		// Sprite Y coordinate
-	POKE(0xD01D, 0);			// sprite X MSBs
-	POKE(0xD027, STATUS_BG_COLOUR);		// sprite colour
-	POKE(0xD015, 1);			// sprite enable
-	POKE(0xD01B, 1);			// sprite prio
-	POKE(0xD04D, PEEK(0xD04D) | 0x10);	// horizontal tiling
-	POKE(0xD057, 1);			// sprite extended width
-	POKE(0xff8, 1024/64);			// sprite pointer
-	POKE(0xD076, 0);			// V400 sprites turned off
-}
-#endif
-
-
-const byte irc_server_ip[] = {192, 168, 0, 153};
-#define IRC_PORT 6667
-
-#include "net.h"
 
 
 void main_entry ( void )
@@ -92,6 +38,7 @@ void main_entry ( void )
 #else
 	memset(colour + 23 * 80, (STATUS_BG_COLOUR << 4) | STATUS_FG_COLOUR, 80);
 #endif
+	write_string(build_info);
 	write_string("Resetting ETH ctrl\r");
 	net_init();
 #ifdef	MEGA65
@@ -99,14 +46,15 @@ void main_entry ( void )
 	press_a_key();
 #endif
 	write_string("Connecting to ");
-	write_ip_and_port(irc_server_ip, IRC_PORT);
+	write_ip_and_port(default_irc_server, default_irc_port);
 	write_char(13);
-	net_connect_init(irc_server_ip, IRC_PORT);
+	net_connect_init(default_irc_server, default_irc_port);
 
 
 
 	clear_input();
 
+#if 0
 	text_colour = CURSOR_COLOUR;
 	write_char(13);
 	write_char(13);
@@ -117,6 +65,7 @@ void main_entry ( void )
 	write_dec(0);
 	write_char(13);
 	text_colour = TEXT_COLOUR;
+#endif
 
 
 	for (;;) {

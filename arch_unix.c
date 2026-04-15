@@ -188,7 +188,6 @@ int main ( int argc, char **argv )
 	for (int i = 0; i < 16; i++)
 		sdl_colours[i] = SDL_MapRGBA(sdl_fmt, NEX(cpal[i] & 0xEF), NEX(cpal[i + 0x10]), NEX(cpal[i + 0x20]), 0xFF);
 	SDL_StartTextInput();
-	memset(font, 0xFF, 16);	// character with ASCII zero will be used as cursor
 	main_entry();	// Call the main entry point
 	shutup();
 	return 0;

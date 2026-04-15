@@ -15,14 +15,23 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include "arch.h"
+#include "common.h"
+#include <string.h>
 
-#if 0
-byte arch_getkey ( void )
+
+void sprite_init ( void )
 {
-	byte b = PEEK(0xD610);
-	if (!b)
-		return 0;
-	POKE(0xD610, 0);
-	return b;
+	// TODO: clean this up!!!
+	memset((void*)1024, 0, 1024);
+	memset((void*)1024, 0xFF, 56);
+	POKE(0xD000, 24);			// sprite X coordinate
+	POKE(0xD001, 43 + 24 * 8 - 1);		// Sprite Y coordinate
+	POKE(0xD01D, 0);			// sprite X MSBs
+	POKE(0xD027, STATUS_BG_COLOUR);		// sprite colour
+	POKE(0xD015, 1);			// sprite enable
+	POKE(0xD01B, 1);			// sprite prio
+	POKE(0xD04D, PEEK(0xD04D) | 0x10);	// horizontal tiling
+	POKE(0xD057, 1);			// sprite extended width
+	POKE(0xff8, 1024/64);			// sprite pointer
+	POKE(0xD076, 0);			// V400 sprites turned off
 }
-#endif

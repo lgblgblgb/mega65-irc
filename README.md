@@ -23,7 +23,7 @@ TODO, if it does something useful ;)
 
 ## Just download
 
-Look into the `bin/` directory for a D81 image
+Look into the `bin/` directory for a D81 image or for a "PRG" file.
 
 ## Compile yourself
 

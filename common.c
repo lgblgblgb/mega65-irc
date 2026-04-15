@@ -16,6 +16,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include "arch.h"
 #include "common.h"
+#include <string.h>
 
 #define TEXT_COLOUR		1
 #define CURSOR_COLOUR		5
@@ -25,17 +26,19 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 
 static word line_addr = 0;
-static byte x = 0;
+static byte x_pos = 0;
 byte text_colour = TEXT_COLOUR;
+static word inp_addr;
+
 
 void write_char ( const byte c )
 {
 	if (c == 10)
 		return;
 	if (c == 13) {
-		if (x) {
+		if (x_pos) {
 			line_addr += 80;
-			x = 0;
+			x_pos = 0;
 		}
 		return;
 	}
@@ -49,11 +52,11 @@ void write_char ( const byte c )
 		memset(screen + 22 * 80, 32, 80);
 #endif
 	}
-	screen[line_addr + x] = c;
-	colour[line_addr + x] = text_colour;
-	x++;
-	if (x == 80) {
-		x = 0;
+	screen[line_addr + x_pos] = c;
+	colour[line_addr + x_pos] = text_colour;
+	x_pos++;
+	if (x_pos == 80) {
+		x_pos = 0;
 		line_addr += 80;
 	}
 }
@@ -115,6 +118,7 @@ void wait ( word frames )
 {
 #ifdef	MEGA65
 	byte old = PEEK(0xD7FA);
+	frames++;	// be sure at least one full frame is waited
 	while (frames) {
 		for (;;) {
 			byte new = PEEK(0xD7FA);
@@ -128,4 +132,31 @@ void wait ( word frames )
 #else
 	SDL_Delay(20 * frames);
 #endif
+}
+
+
+void clear_input ( void )
+{
+	inp_addr = 24 * 80;
+	memset(screen + inp_addr, 32, 80);
+	screen[inp_addr] = 0;
+	colour[inp_addr] = CURSOR_COLOUR;
+}
+
+
+void add_input ( const byte c )
+{
+	if (c == 0x14 && inp_addr != 24 * 80) {
+		screen[inp_addr] = ' ';
+		inp_addr--;
+		screen[inp_addr] = 0;
+		colour[inp_addr] = CURSOR_COLOUR;
+	}
+	if (c >= 32 && c < 127 && inp_addr != 24 * 80 + 79) {
+		screen[inp_addr] = c;
+		colour[inp_addr] = INPUT_COLOUR;
+		inp_addr++;
+		screen[inp_addr] = 0;
+		colour[inp_addr] = CURSOR_COLOUR;
+	}
 }

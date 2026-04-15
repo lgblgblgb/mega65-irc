@@ -51,6 +51,7 @@ typedef unsigned int word;
 #define arch_refresh()
 extern byte arch_getkey ( void );
 extern void mega65_scroller ( void );
+extern void sprite_init ( void );
 
 #endif
 #endif

@@ -170,6 +170,7 @@ again:
 				break;
 			old_status = eth_call_a;
 		}
+		screen[24*80 - 2] = screen[24*80 - 1];
 	}
 	write_char(' ');
 	copy_ip_info_addr = ip_info;
@@ -220,5 +221,6 @@ void net_connect_init ( const byte *ip, const word port )
 			for(;;) ;
 		}
 		wait(1);	// without this, it does not work??
+		screen[24*80 - 2] = screen[24*80 - 1];
 	}
 }
