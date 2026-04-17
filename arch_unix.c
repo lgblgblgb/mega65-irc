@@ -20,8 +20,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 #include "font.h"
 
 
-byte screen[80 * 25];
-byte colour[80 * 25];
+byte screen_mem[80 * 25];
+byte colour_mem[80 * 25];
 
 #define	X_SIZE		(80 * 8)
 #define	Y_SIZE		(25 * 16)
@@ -119,8 +119,8 @@ void arch_refresh ( void )
 	for (unsigned int y = 0; y < 25 * 16; y++) {
 		const Uint32 bg = (y >> 4) == status_line_number ? sdl_status_bg_colour : sdl_generic_bg_colour;
 		for (unsigned int x = 0, i = (y >> 4) * 80; x < 80; x++, i++) {
-			const Uint32 fg = sdl_colours[colour[i] & 15];
-			const byte data = font[(screen[i] << 4) + (y & 15)];
+			const Uint32 fg = sdl_colours[colour_mem[i] & 15];
+			const byte data = font[(screen_mem[i] << 4) + (y & 15)];
 			for (unsigned int k = 0x80; k; k >>= 1)
 				*p++ = data & k ? fg : bg;
 		}

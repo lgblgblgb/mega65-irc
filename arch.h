@@ -26,8 +26,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 typedef Uint8 byte;
 typedef Uint16 word;
 
-extern byte screen[80 * 25];
-extern byte colour[80 * 25];
+extern byte screen_mem[80 * 25];
+extern byte colour_mem[80 * 25];
 
 extern void arch_refresh ( void );
 extern byte arch_getkey ( void );
@@ -44,8 +44,8 @@ extern void arch_set_background_colour ( const byte bg_colour );
 typedef unsigned char byte;
 typedef unsigned int word;
 
-#define screen ((byte*)(0x0800U))
-#define colour ((byte*)(0xF800U))
+#define screen_mem ((byte*)(0x0800U))
+#define colour_mem ((byte*)(0xF800U))
 
 #define POKE(addr,val)     (*(unsigned char*) (addr) = (val))
 #define POKEW(addr,val)    (*(unsigned*) (addr) = (val))

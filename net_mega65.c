@@ -162,7 +162,7 @@ again:
 		eth_call();
 		if (eth_call_a != old_status) {
 			if (eth_call_a == 127) {
-				write_string("Timeout\r");
+				write_string("Timeout\n");
 				goto again;
 			}
 			write_char(eth_call_a + '0');
@@ -170,7 +170,7 @@ again:
 				break;
 			old_status = eth_call_a;
 		}
-		screen[24*80 - 2] = screen[24*80 - 1];
+		screen_mem[24*80 - 2] = screen_mem[24*80 - 1];
 	}
 	write_char(' ');
 	copy_ip_info_addr = ip_info;
@@ -182,7 +182,7 @@ again:
 	write_ip(ip_info + 12);
 	write_char(' ');
 	write_ip(ip_info + 20);
-	write_char(13);
+	write_char('\n');
 }
 
 
@@ -213,14 +213,14 @@ void net_connect_init ( const byte *ip, const word port )
 		eth_call_id = ETH_CONNECT_POLL;
 		eth_call();
 		if (eth_call_a & 1) {
-			write_string("Connected.\r");
+			write_string("Connected.\n");
 			return;
 		}
 		if (eth_call_a & 2) {
-			write_string("Failed\r");
+			write_string("Failed\n");
 			for(;;) ;
 		}
 		wait(1);	// without this, it does not work??
-		screen[24*80 - 2] = screen[24*80 - 1];
+		screen_mem[24*80 - 2] = screen_mem[24*80 - 1];
 	}
 }

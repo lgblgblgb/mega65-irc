@@ -44,8 +44,8 @@ void set_status_line_writing ( const bool status )
 		line_addr = 23 * 80;
 		text_colour_saved = text_colour;
 		text_colour = STATUS_FG_COLOUR;
-		memset(screen + 23 * 80, ' ', 80);	// clear previous status line
-		memset(colour + 23*80, STATUS_FG_COLOUR, 80);
+		memset(screen_mem + 23 * 80, ' ', 80);	// clear previous status line
+		memset(colour_mem + 23*80, STATUS_FG_COLOUR, 80);
 	} else {
 		to_scroll = true;
 		x_pos = x_pos_saved;
@@ -57,9 +57,7 @@ void set_status_line_writing ( const bool status )
 
 void write_char ( byte c )
 {
-	if (c == 10)
-		return;
-	if (c == 13) {
+	if (c == 13 || c == 10) {
 		if (x_pos) {
 			if (to_scroll)
 				line_addr += 80;
@@ -95,13 +93,13 @@ void write_char ( byte c )
 #ifdef		MEGA65
 		mega65_scroller();
 #else
-		memmove(screen, screen + 80, 22 * 80);
-		memmove(colour, colour + 80, 22 * 80);
-		memset(screen + 22 * 80, 32, 80);
+		memmove(screen_mem, screen_mem + 80, 22 * 80);
+		memmove(colour_mem, colour_mem + 80, 22 * 80);
+		memset(screen_mem + 22 * 80, 32, 80);
 #endif
 	}
-	screen[line_addr + x_pos] = c;
-	colour[line_addr + x_pos] = text_colour;
+	screen_mem[line_addr + x_pos] = c;
+	colour_mem[line_addr + x_pos] = text_colour;
 	x_pos++;
 	if (x_pos == 80) {
 		x_pos = 0;
@@ -132,8 +130,14 @@ void write_string_utf8 ( const char *s )
 
 void write_error ( const char *s )
 {
+	write_colour_string(s, ERROR_COLOUR);
+}
+
+
+void write_colour_string ( const char *s, const byte temp_colour )
+{
 	text_colour_restore = text_colour;
-	text_colour = ERROR_COLOUR;
+	text_colour = temp_colour;
 	write_string(s);
 }
 
@@ -182,7 +186,7 @@ void consume_keys ( void )
 
 void press_a_key ( void )
 {
-	write_string("Press any key\r");
+	write_string("Press any key\n");
 	while (arch_getkey())
 		;
 	while (!arch_getkey())
@@ -214,31 +218,31 @@ void wait ( word frames )
 void clear_input ( void )
 {
 	inp_addr = 24 * 80;
-	memset(screen + inp_addr, 32, 80);
-	screen[inp_addr] = 0;
-	colour[inp_addr] = CURSOR_COLOUR;
+	memset(screen_mem + inp_addr, 32, 80);
+	screen_mem[inp_addr] = 0;
+	colour_mem[inp_addr] = CURSOR_COLOUR;
 }
 
 
 void add_input ( const byte c )
 {
 	if (c == 0x14 && inp_addr != 24 * 80) {
-		screen[inp_addr] = ' ';
+		screen_mem[inp_addr] = ' ';
 		inp_addr--;
-		screen[inp_addr] = 0;
-		colour[inp_addr] = CURSOR_COLOUR;
+		screen_mem[inp_addr] = 0;
+		colour_mem[inp_addr] = CURSOR_COLOUR;
 	}
 	if (c >= 32 && c < 127 && inp_addr != 24 * 80 + 79) {
-		screen[inp_addr] = c;
-		colour[inp_addr] = INPUT_COLOUR;
+		screen_mem[inp_addr] = c;
+		colour_mem[inp_addr] = INPUT_COLOUR;
 		inp_addr++;
-		screen[inp_addr] = 0;
-		colour[inp_addr] = CURSOR_COLOUR;
+		screen_mem[inp_addr] = 0;
+		colour_mem[inp_addr] = CURSOR_COLOUR;
 	}
 }
 
 
-// Yes, stupid. However using CC65's functions consts almost 2K of code space for strtol() routine!
+// Yes, stupid. However using CC65's functions costs almost 2K of code space for the proper strtol()
 word str2dec ( const char *s )
 {
 	int r = 0;
