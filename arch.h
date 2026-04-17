@@ -31,10 +31,15 @@ extern byte colour[80 * 25];
 
 extern void arch_refresh ( void );
 extern byte arch_getkey ( void );
+extern void arch_set_status_bg_emulation ( const byte line_no, const byte bg_colour );
+extern void arch_set_background_colour ( const byte bg_colour );
+
 
 #else
 
 /* -------------------- MEGA65 -------------------- */
+
+#include <stdbool.h>
 
 typedef unsigned char byte;
 typedef unsigned int word;
@@ -51,7 +56,10 @@ typedef unsigned int word;
 #define arch_refresh()
 extern byte arch_getkey ( void );
 extern void mega65_scroller ( void );
-extern void sprite_init ( void );
+extern void arch_set_status_bg ( const byte line_no, const byte bg_colour );
 
 #endif
+
+extern void arch_exit ( void );
+
 #endif

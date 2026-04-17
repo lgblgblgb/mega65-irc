@@ -18,31 +18,79 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 #include "common.h"
 #include <string.h>
 
-#define TEXT_COLOUR		1
-#define CURSOR_COLOUR		5
-#define INPUT_COLOUR		14
-#define STATUS_BG_COLOUR	2
-#define STATUS_FG_COLOUR	7
 
 
 static word line_addr = 0;
 static byte x_pos = 0;
 byte text_colour = TEXT_COLOUR;
 static word inp_addr;
+static bool to_scroll = true;
+
+static word line_addr_saved;
+static byte x_pos_saved;
+static byte text_colour_saved;
+static byte text_colour_restore = 0x80;
+
+int utf8 = UTF8_OFF;
 
 
-void write_char ( const byte c )
+void set_status_line_writing ( const bool status )
+{
+	if (status) {
+		to_scroll = false;
+		x_pos_saved = x_pos;
+		x_pos = 0;
+		line_addr_saved = line_addr;
+		line_addr = 23 * 80;
+		text_colour_saved = text_colour;
+		text_colour = STATUS_FG_COLOUR;
+		memset(screen + 23 * 80, ' ', 80);	// clear previous status line
+		memset(colour + 23*80, STATUS_FG_COLOUR, 80);
+	} else {
+		to_scroll = true;
+		x_pos = x_pos_saved;
+		line_addr = line_addr_saved;
+		text_colour = text_colour_saved;
+	}
+}
+
+
+void write_char ( byte c )
 {
 	if (c == 10)
 		return;
 	if (c == 13) {
 		if (x_pos) {
-			line_addr += 80;
+			if (to_scroll)
+				line_addr += 80;
 			x_pos = 0;
 		}
 		return;
 	}
-	if (line_addr >= 23*80) {
+	// Support only 2 byte long utf8 sequences with limited characters!
+	// Not a standard-compliant utf8 parser at all ;-)
+	if ((c & 0x80) && utf8 >= 0) {
+		if ((c & 0xE0) == 0xC0) {
+			utf8 = (c & 0x1F) << 6;
+			return;
+		}
+		if ((c & 0xC0) == 0x80) {
+			utf8 |= c & 0x3F;
+#ifndef MEGA65
+			printf("UTF8 code point: %d\n", utf8);
+#endif
+			switch (utf8) {
+				// TODO: add more codepoint mapping which is in VGA font at all to map to
+				// case values: unicode code point, 'c' assignments: VGA font mapping position
+				case 0xE1: c = 0xA0; break;	// á
+				case 0xE9: c = 0x82; break;	// é
+				default:   c = '~' ; break;
+			}
+		} else
+			c = '~';
+		utf8 = 0;
+	}
+	if (to_scroll && line_addr >= 23*80) {
 		line_addr = 22 * 80;
 #ifdef		MEGA65
 		mega65_scroller();
@@ -57,7 +105,8 @@ void write_char ( const byte c )
 	x_pos++;
 	if (x_pos == 80) {
 		x_pos = 0;
-		line_addr += 80;
+		if (to_scroll)
+			line_addr += 80;
 	}
 }
 
@@ -66,6 +115,26 @@ void write_string ( const char *s )
 {
 	while (*s)
 		write_char(*s++);
+	utf8 = UTF8_OFF;
+	if ((text_colour_restore & 0x80))
+		return;
+	text_colour = text_colour_restore;
+	text_colour_restore = 0x80;
+}
+
+
+void write_string_utf8 ( const char *s )
+{
+	utf8 = UTF8_ON;
+	write_string(s);
+}
+
+
+void write_error ( const char *s )
+{
+	text_colour_restore = text_colour;
+	text_colour = ERROR_COLOUR;
+	write_string(s);
 }
 
 
@@ -101,6 +170,13 @@ void write_ip_and_port ( const byte *ip, const word port )
 	write_ip(ip);
 	write_char(':');
 	write_dec(port);
+}
+
+
+void consume_keys ( void )
+{
+	while (arch_getkey())
+		;
 }
 
 
@@ -159,4 +235,18 @@ void add_input ( const byte c )
 		screen[inp_addr] = 0;
 		colour[inp_addr] = CURSOR_COLOUR;
 	}
+}
+
+
+// Yes, stupid. However using CC65's functions consts almost 2K of code space for strtol() routine!
+word str2dec ( const char *s )
+{
+	int r = 0;
+	while (*s) {
+		if (*s < '0' || *s > '9')
+			return 0xFFFF;
+		r = r * 10 + (*s & 0xF);
+		s++;
+	}
+	return r;
 }

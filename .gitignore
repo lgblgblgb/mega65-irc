@@ -5,6 +5,8 @@ tags
 .vscode
 .DS_Store
 *.tmp
+*.bak
+*.BAK
 /build
 /irc
 /irc.lab
@@ -12,3 +14,4 @@ tags
 /irc.prg
 /backup
 /obs
+/build_info.c

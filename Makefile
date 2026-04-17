@@ -14,7 +14,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-COBJS	= irc.o common.o
+COBJS	= irc.o common.o build_info.o
 #XEMU	= xemu-xmega65
 XEMU	= ~/prog_here/xemu-next/build/bin/xmega65.native
 ETHLOAD	= mega65_etherload
@@ -53,15 +53,16 @@ $(BDIR)/%.o: %.c
 	@if [ -f $(notdir $@) ]; then mv $(notdir $@) $@ ; fi
 
 $(BINUNIX): $(DOOBJS)
-	bash build_info.sh "$(CC)" $(BDIR)/build-info.c $(BDIR)/build-info.o ""
-	$(CC) -o $@ $^ $(BDIR)/build-info.o $(LDFLAGS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+build_info.c:
+	bash ./build_info.sh > $@
 
 $(BDIR)/arch_mega65_lowlevel.o: arch_mega65_lowlevel.asm
 	$(CA65) -t none -o $@ $<
 
 $(BINMEGA): $(DOOBJS)
-	bash build_info.sh "$(CC)" $(BDIR)/build-info.c $(BDIR)/build-info.o "-t none"
-	$(LD65) $(LDFLAGS) -o $@ $^ $(BDIR)/build-info.o $(SYSLIB)
+	$(LD65) $(LDFLAGS) -o $@ $^ $(SYSLIB)
 
 mega65:
 	$(MAKE) $(BINMEGA)
@@ -87,6 +88,6 @@ publish:
 	cp $(BINMEGA) bin/
 
 clean:
-	rm -f $(BINUNIX) $(BINMEGA) build/*/*.o build/*/*.c $(D81NAME).tmp
+	rm -f $(BINUNIX) $(BINMEGA) build/*/*.o $(D81NAME).tmp irc.lab irc.map build_info.c
 
 .PHONY: all mega65 xemu run clean publish

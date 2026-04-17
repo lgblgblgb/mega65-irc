@@ -20,54 +20,189 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 #include <string.h>
 
 
-static const char demo[] = "MEGA65 iRC";
+static byte current_ip[4] = {192,168,0,153};
+static word current_port = 6667;
+static char current_nick[17] = "LGBmega";
+static const char space_str[] = " ";
+static const char missing_parameters[] = "Missing cmd par(s)\r";
+static enum { FSM_OFFLINE, FSM_CONNECT, FSM_CONNECTED, FSM_ONLINE } fsm = FSM_OFFLINE;
 
-const byte default_irc_server[] = {192, 168, 0, 153};
-#define default_irc_port 6667
 
+static void update_status ( void )
+{
+	set_status_line_writing(true);
+	write_string(" MEGA65IRC ");
+	if (fsm == FSM_OFFLINE) {
+		write_string("offline");
+	} else {
+		write_ip_and_port(current_ip, current_port);
+		write_string(fsm == FSM_CONNECT ? " connecting [" : " [");
+		write_string(current_nick);
+		write_char(']');
+	}
+	set_status_line_writing(false);
+}
+
+
+static void fsm_connect_to ( void )
+{
+	fsm = FSM_CONNECT;
+	//write_string("Connecting to ");
+	//write_ip_and_port(current_ip, current_port);
+	//write_char(13);
+	update_status();
+}
+
+
+static void show_build_info ( void )
+{
+	text_colour = INFO_COLOUR;
+	write_string_utf8(build_info);
+	text_colour = TEXT_COLOUR;
+}
+
+
+static void cmd_server ( void )
+{
+	char *r1, *r2, *r3;
+	if (fsm != FSM_OFFLINE) {
+		write_error("Already connected!\r");
+		return;
+	}
+	r1 = strtok(NULL, space_str);
+	r2 = strtok(NULL, space_str);
+	r3 = strtok(NULL, space_str);
+	if (r1 && r2) {
+		static byte ip_addr[4];
+		word i, d;
+		for (i = 0; i < 4; i++) {
+			char *ip = strtok(r1, ".");
+			if (!ip)
+				goto bad;
+			r1 = NULL;	// for strtok() in non-first cases
+			d = str2dec(ip);
+			if ((i == 0 && d == 0) || d > 0xFF)
+				goto bad;
+			ip_addr[i] = (byte)d;
+		}
+		d = str2dec(r2);
+		if (d == 0 || d == 0xFFFF)
+			goto bad;
+		if (r3) {
+			strncpy(current_nick, r3, sizeof current_nick);
+			current_nick[sizeof(current_nick) - 1] = '\0';
+		}
+		// Seems to be good IP and port!
+		memcpy(current_ip, ip_addr, 4);
+		current_port = d;
+		fsm_connect_to();
+		return;
+	}
+	write_error(missing_parameters);
+	return;
+bad:
+	write_error("Bad IP or port\r");
+}
+
+
+static void cmd_nick ( void )
+{
+	char *nick = strtok(NULL, space_str);
+	if (!nick) {
+		write_error(missing_parameters);
+		return;
+	}
+	strncpy(current_nick, nick, sizeof current_nick);
+	current_nick[sizeof(current_nick) - 1] = '\0';
+	update_status();
+	// TODO: if connected, send to the server too!
+	// TODO: or only send to the server if connected, and change nick on server's response?
+}
+
+
+static void cmd_help ( void );
+
+
+static const struct command_st {
+	const char *cmd;
+	void (*callback)(void);
+} commands[] = {
+	{ "help",	cmd_help	},
+	{ "nick",	cmd_nick	},
+	{ "quit",	arch_exit	},
+	{ "server",	cmd_server	},
+	{ "sys",	show_build_info	},
+	{ NULL,		NULL }
+};
+
+
+static void cmd_help ( void )
+{
+	const struct command_st *c;
+	write_string("Slash-cmds:");
+	for (c = commands; c->cmd; c++) {
+		write_char(' ');
+		write_string(c->cmd);
+	}
+	write_char(13);
+}
+
+
+static bool try_to_interpret_as_slash_command ( char *p )
+{
+	while (*p && *p <= 32)
+		p++;
+	if (*p == '/') {
+		char *r = strtok(p + 1, space_str);
+		if (r) {
+			const struct command_st *c;
+			for (c = commands; c->cmd; c++) {
+				if (!strcmp(c->cmd, r)) {
+					(c->callback)();
+					return true;
+				}
+			}
+			write_error("Unknown cmd: /");
+			write_error(r);
+			write_char(13);
+		}
+		return true;
+	}
+	return false;	// was not a slash-command
+}
 
 
 void main_entry ( void )
 {
-	memset(colour, 1, 80*25);
-	memset(screen, 32, 80*25);
-	memcpy(screen + 23 * 80 + 1, demo, sizeof(demo) - 1);
-#ifdef	MEGA65
-	sprite_init();
-	memset(colour + 23 * 80, STATUS_FG_COLOUR, 80);
+#ifndef	MEGA65
+	arch_set_background_colour(BACKGROUND_COLOUR);
+	arch_set_status_bg_emulation(23, STATUS_BG_COLOUR);
 #else
-	memset(colour + 23 * 80, (STATUS_BG_COLOUR << 4) | STATUS_FG_COLOUR, 80);
+	POKE(0xD020, BORDER_COLOUR);
+	POKE(0xD021, BACKGROUND_COLOUR);
+	arch_set_status_bg(23, STATUS_BG_COLOUR);
 #endif
-	write_string(build_info);
-	write_string("Resetting ETH ctrl\r");
+	memset(screen, 32, 2000);	// clear screen
+	update_status();
+	show_build_info();
+#ifdef	MEGA65
+	write_string("Resetting ethernet controller\r");
+#endif
 	net_init();
 #ifdef	MEGA65
 	net_do_dhcp();
-	press_a_key();
 #endif
+	write_string(
+		"Connect a server (no DNS yet): /server IP port YourNick\r"
+		"or press F1 to connect with the default settings.\r"
+		"(to list slash commands: /help\r)"
+	);
 	write_string("Connecting to ");
-	write_ip_and_port(default_irc_server, default_irc_port);
+	write_ip_and_port(current_ip, current_port);
 	write_char(13);
-	net_connect_init(default_irc_server, default_irc_port);
-
-
-
+	net_connect_init(current_ip, current_port);
 	clear_input();
-
-#if 0
-	text_colour = CURSOR_COLOUR;
-	write_char(13);
-	write_char(13);
-	write_dec(65535U);
-	write_char(13);
-	write_dec(9);
-	write_char(13);
-	write_dec(0);
-	write_char(13);
-	text_colour = TEXT_COLOUR;
-#endif
-
-
+	consume_keys();	// make sure keyboard is being empty
 	for (;;) {
 #ifndef		MEGA65
 		static int init_sent = false;
@@ -75,7 +210,8 @@ void main_entry ( void )
 		if (n != -1 && (n & 1)) {
 			if (!init_sent) {
 				write_string("Conntected.\r");
-				static const char init_cmds[] = "user lgb +iw lgb :lgb is here\r\nnick lgbx\r\n";
+				update_status();
+				static const char init_cmds[] = "USER lgb +iw lgb :MEGA65 ruleZ\r\nNICK lgbx\r\n";
 				if (net_write((byte*)init_cmds, sizeof(init_cmds) - 1) != -1) {
 					text_colour = CURSOR_COLOUR;
 					write_string(init_cmds);
@@ -83,6 +219,7 @@ void main_entry ( void )
 					init_sent = true;
 				}
 			}
+			// Emptying received data byte-by-byte
 			for (;;) {
 				static byte rx_buffer[256];
 				static int rx_fill = 0;
@@ -100,7 +237,7 @@ void main_entry ( void )
 							rx_buffer[rx_fill++] = '\n';
 							net_write(rx_buffer, rx_fill);	// then transmit as answer ...
 						} else {
-							write_string((char*)rx_buffer);
+							write_string_utf8((char*)rx_buffer);
 							write_char(13);
 						}
 						rx_fill = 0;
@@ -119,13 +256,26 @@ void main_entry ( void )
 		//printf("Hi!\n");
 		const byte b = arch_getkey();
 		if (b == 13) {
-			write_string(input_string);
-			write_char(13);
+			if (!try_to_interpret_as_slash_command(input_string)) {
+				const byte l = strlen(input_string);
+				write_string(input_string);
+				write_char(13);
+#ifndef				MEGA65
+				input_string[l] = '\r';
+				input_string[l + 1] = '\n';
+				input_string[l + 2] = 0;
+				net_write((byte*)input_string, l + 2);
+#endif
+			}
 			clear_input();
 		} else if (b == 27) {
 			clear_input();
+		} else if (b == 0x85) {	// F1
+			// Secret feature to connect to the default IRC server initially with a single keypress :)
+			if (fsm == FSM_OFFLINE) {
+				fsm_connect_to();
+			}
 		} else if (b) {
-			//write_char(b);
 			add_input(b);
 		}
 		arch_refresh();

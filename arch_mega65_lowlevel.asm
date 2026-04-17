@@ -46,6 +46,12 @@ nextline:
 .ENDSCOPE
 
 .SEGMENT	"STARTUP"
+
+;; Must be exactly here to easy to edit!
+; Do not put anything before this in the STARTUP segment!
+;.BYTE	192, 168, 0, 153
+;.WORD	6667
+
 stub_main:
 	SEI
 	CLD
@@ -109,10 +115,6 @@ sys_init:
 	;STA	$D069
 	;LDA	#0
 	;STA	$D06A
-
-	LDA	#0
-	STA	$D020
-	STA	$D021
 
 	STA	$D707		; triggers in-line enhanced mode DMA
 	.BYTE	$A		; enhanced option: F018A DMA list (shorter)
@@ -198,6 +200,22 @@ sys_init:
 	JMP	@halt
 
 
+
+
+.EXPORT	_arch_exit
+_arch_exit:
+	SEI
+	LDA	#0
+	TAX
+	TAY
+	TAZ
+	MAP
+	EOM
+	LDA	#6
+	STA	1
+	JMP	($FFFC)
+
+
 ; ---- KEYBOARD RELATED STUFF TO BE CALLED FROM C ----
 
 .EXPORT	_arch_getkey
@@ -259,6 +277,10 @@ _mega65_scroller:
 vgafont:
 	.INCBIN	"font.bin"
 vgafont_size = * - vgafont
+
+.IF vgafont_size <> $1000
+	.ERROR "font.bin has wrong size!"
+.ENDIF
 
 payload:
 	.INCBIN "megaip/eth.bin"

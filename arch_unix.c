@@ -17,17 +17,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 #include <stdio.h>
 #include "arch.h"
 #include <SDL.h>
+#include "font.h"
+
 
 byte screen[80 * 25];
 byte colour[80 * 25];
 
-#define	X_SIZE	(80 * 8)
-#define	Y_SIZE	(25 * 16)
-#define	PIXELFORMAT SDL_PIXELFORMAT_ARGB8888
-#define WINDOW_TITLE "iRC"
+#define	X_SIZE		(80 * 8)
+#define	Y_SIZE		(25 * 16)
+#define	PIXELFORMAT	SDL_PIXELFORMAT_ARGB8888
+#define WINDOW_TITLE	"MEGA65 IRC (unix client)"
 
-#define UPDATE_MS 16
-#define KQ_SIZE 4
+#define UPDATE_MS	16
+#define KQ_SIZE		4
+
+static const char window_title[] = WINDOW_TITLE;
 
 static int kq_size = 0;
 static byte kq[KQ_SIZE];
@@ -40,18 +44,40 @@ static Uint32 sdl_pix[X_SIZE * Y_SIZE];
 static bool sdl_init = false;
 static Uint32 sdl_colours[16];
 static Uint32 sdl_last_update = 0;
+static int status_line_number = -1;
+static Uint32 sdl_status_bg_colour, sdl_generic_bg_colour;
 
-#include "font.h"
+
+void arch_set_status_bg_emulation ( const byte line_no, const byte bg_colour )
+{
+	status_line_number = line_no;
+	sdl_status_bg_colour = sdl_colours[bg_colour];
+}
+
+
+void arch_set_background_colour ( const byte bg_colour )
+{
+	sdl_generic_bg_colour = sdl_colours[bg_colour];
+}
 
 
 static void shutup ( void )
 {
+	puts("shutup() called!");
 	if (sdl_fmt)	SDL_FreeFormat(sdl_fmt);
 	if (sdl_tex)	SDL_DestroyTexture(sdl_tex);
 	if (sdl_ren)	SDL_DestroyRenderer(sdl_ren);
 	if (sdl_win)	SDL_DestroyWindow(sdl_win);
 	if (sdl_init)	SDL_Quit();
+	puts("Bye!");
 	exit(-1);
+}
+
+
+void arch_exit ( void )
+{
+	puts("arch_exit() called!");
+	shutup();
 }
 
 
@@ -90,16 +116,17 @@ void arch_refresh ( void )
 	sdl_last_update = t;
 	// *** Update screen ***
 	Uint32 *p = sdl_pix;
-	for (int y = 0; y < 25 * 16; y++) {
-		for (int x = 0, i = (y >> 4) * 80; x < 80; x++, i++) {
+	for (unsigned int y = 0; y < 25 * 16; y++) {
+		const Uint32 bg = (y >> 4) == status_line_number ? sdl_status_bg_colour : sdl_generic_bg_colour;
+		for (unsigned int x = 0, i = (y >> 4) * 80; x < 80; x++, i++) {
 			const Uint32 fg = sdl_colours[colour[i] & 15];
-			const Uint32 bg = sdl_colours[colour[i] >> 4];
 			const byte data = font[(screen[i] << 4) + (y & 15)];
-			for (int k = 0x80; k; k >>= 1)
+			for (unsigned int k = 0x80; k; k >>= 1)
 				*p++ = data & k ? fg : bg;
 		}
 	}
 	SDL_UpdateTexture(sdl_tex, NULL, sdl_pix, X_SIZE * 4);
+	SDL_RenderClear(sdl_ren);
 	SDL_RenderCopy(sdl_ren, sdl_tex, NULL, NULL);
 	SDL_RenderPresent(sdl_ren);
 	// *** Handle events ***
@@ -128,6 +155,7 @@ void arch_refresh ( void )
 						case SDL_SCANCODE_LEFT:		k = 0x9D9D;	break;
 						case SDL_SCANCODE_UP:		k = 0x9191;	break;
 						case SDL_SCANCODE_DOWN:		k = 0x1111;	break;
+						case SDL_SCANCODE_F1:		k = 0x8589;	break;
 						default:					break;
 					}
 					if (k != -1)
@@ -135,10 +163,26 @@ void arch_refresh ( void )
 				}
 				break;
 			case SDL_TEXTINPUT:
-				add_key(ev.text.text[0]);
+				for (const char *p = ev.text.text; *p; p++)
+					add_key(*p);
 				break;
 		}
 	}
+}
+
+
+static void sdl_fatal_error ( const char *msg )
+{
+	const char *s = SDL_GetError();
+	if (!s || !s[0])
+		s = "(EMPTY)";
+	static const char pre[] = "SDL fatal error";
+	const int l = strlen(pre) + strlen(msg) + strlen(s) + 10;
+	char buffer[l];
+	snprintf(buffer, l, "%s: %s: %s", pre, msg ? msg : "ERROR", s);
+	fprintf(stderr, "%s\n", buffer);
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, window_title, buffer, sdl_win);
+	shutup();
 }
 
 
@@ -149,45 +193,33 @@ static const Uint8 cpal[] = {
 };
 #define NEX(a) ((((a))>>4)+(((a) & 15) << 4))
 
+
 extern void main_entry ( void );
+
 
 int main ( int argc, char **argv )
 {
-	if (SDL_Init(SDL_INIT_EVERYTHING & ~(SDL_INIT_TIMER | SDL_INIT_HAPTIC))) {
-		fprintf(stderr, "Cannot initialize SDL2 library: %s\n", SDL_GetError());
-		shutup();
-		return -1;
-	}
+	if (SDL_Init(SDL_INIT_EVERYTHING & ~(SDL_INIT_TIMER | SDL_INIT_HAPTIC)))
+		sdl_fatal_error("Cannot initialize SDL2 library");
 	sdl_init = true;
-	sdl_win = SDL_CreateWindow(WINDOW_TITLE, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, X_SIZE * 2, Y_SIZE * 2, SDL_WINDOW_SHOWN);
-	if (!sdl_win) {
-		fprintf(stderr, "Cannot create window: %s\n", SDL_GetError());
-		shutup();
-		return -1;
-	}
+	sdl_win = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, X_SIZE * 2, Y_SIZE * 2, SDL_WINDOW_SHOWN);
+	if (!sdl_win)
+		sdl_fatal_error("Cannot create window");
 	sdl_ren = SDL_CreateRenderer(sdl_win, -1, SDL_RENDERER_ACCELERATED);
-	if (!sdl_ren) {
-		fprintf(stderr, "Cannot create renderer: %s\n", SDL_GetError());
-		shutup();
-		return -1;
-	}
+	if (!sdl_ren)
+		sdl_fatal_error("Cannot create renderer");
 	SDL_RenderSetLogicalSize(sdl_ren, X_SIZE, Y_SIZE);
 	sdl_tex = SDL_CreateTexture(sdl_ren, PIXELFORMAT, SDL_TEXTUREACCESS_STREAMING, X_SIZE, Y_SIZE);
-	if (!sdl_tex) {
-		fprintf(stderr, "Cannot create texture: %s\n", SDL_GetError());
-		shutup();
-		return -1;
-	}
+	if (!sdl_tex)
+		sdl_fatal_error("Cannot create texture");
 	sdl_fmt = SDL_AllocFormat(PIXELFORMAT);
-	if (!sdl_fmt) {
-		fprintf(stderr, "Cannot allocate format: %s\n", SDL_GetError());
-		shutup();
-		return -1;
-	}
-	//sdl_colours[i] = SDL_MapRGBA(sdl_fmt, inipal[i * 3], inipal[i * 3 + 1], inipal[i * 3 + 2], 0xFF);
+	if (!sdl_fmt)
+		sdl_fatal_error("Cannot allocate format");
 	for (int i = 0; i < 16; i++)
 		sdl_colours[i] = SDL_MapRGBA(sdl_fmt, NEX(cpal[i] & 0xEF), NEX(cpal[i + 0x10]), NEX(cpal[i + 0x20]), 0xFF);
 	SDL_StartTextInput();
+	arch_set_status_bg_emulation(0xFF, 2);
+	arch_set_background_colour(0);
 	main_entry();	// Call the main entry point
 	shutup();
 	return 0;

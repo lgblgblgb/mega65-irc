@@ -19,15 +19,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 #include <string.h>
 
 
-void sprite_init ( void )
+void arch_set_status_bg ( const byte line_no, const byte bg_colour )
 {
 	// TODO: clean this up!!!
 	memset((void*)1024, 0, 1024);
 	memset((void*)1024, 0xFF, 56);
 	POKE(0xD000, 24);			// sprite X coordinate
-	POKE(0xD001, 43 + 24 * 8 - 1);		// Sprite Y coordinate
+	POKE(0xD001, 50 + line_no * 8);		// Sprite Y coordinate
 	POKE(0xD01D, 0);			// sprite X MSBs
-	POKE(0xD027, STATUS_BG_COLOUR);		// sprite colour
+	POKE(0xD027, bg_colour);		// sprite colour
 	POKE(0xD015, 1);			// sprite enable
 	POKE(0xD01B, 1);			// sprite prio
 	POKE(0xD04D, PEEK(0xD04D) | 0x10);	// horizontal tiling
