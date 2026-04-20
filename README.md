@@ -115,7 +115,7 @@ Networking implementation for the MEGA65 versions, using MEGA-IP, through the
 ### megaip/*.asm
 
 The MEGA-IP ("eth.bin") source code, pre-compiled already into eth.bin and labels
-to eth.exp. If you ever need to modify these files, you must run `make` in the
+to eth.i65. If you ever need to modify these files, you must run `make` in the
 megaip/ directory (you also need 64tass assembler for that), then going back
 to the project root, you need `make clean` and `make` to safely rebuild things.
 

@@ -102,7 +102,7 @@ EXEC_BANK = $04     ; code is running from $42000
     jmp ETH_DHCP_START
     jmp ETH_DHCP_POLL
     jmp ETH_GET_DHCP_STATE
-    
+
     jmp ETH_SET_PRIMARY_DNS
 
 
@@ -364,7 +364,7 @@ _query_cache:
     lda #TCP_FLAG_SYN
     jsr ETH_BUILD_TCPIP_PACKET
     bcs _send_fail                 ; (carry set = build error)
-    
+
     jsr ETH_PACKET_SEND
 
     lda #$01
@@ -607,13 +607,13 @@ _not_connected:
 ; Send BASIC A$ over TCP
 ;=============================================================================
 ; currently (!) 2 char variables start at $0F740
-;  2 bytes for var name, $24 for string, then byte count, then <address and 
+;  2 bytes for var name, $24 for string, then byte count, then <address and
 ;  >address in bank 1
 ;
 ; single char variables start at $0FD60.  each three bytes is a letter of the
 ; alphabet ($FD60 for A$, $FD63 for B$, $FD66 for c$ etc).
 ; the three bytes are size, <addr, >addr (bank 1)
-; 
+;
 ; so IF TX$ exists, we will copy its data to the outgoing buffer and send it
 
 ETH_TCP_SEND_STRING:
@@ -663,7 +663,7 @@ _connected:
     .byte $00   ; dest hi
     .byte $00                                   ; end of job options
     .byte $00                                   ; copy
-_var_len:                                   
+_var_len:
     .byte $00 ; <\length,
     .byte $00 ; >\length                    ; length lsb, msb
 _var_addr:
@@ -672,7 +672,7 @@ _dest_addr:
     .byte <TCP_DATA_PAYLOAD, >TCP_DATA_PAYLOAD, EXEC_BANK             ; dest lsb, msb, bank
     .byte $00                                   ; command high byte
     .word $0000                                 ; modulo (ignored)
-    
+
     plp
     jmp ETH_TCP_SEND
 
@@ -723,7 +723,7 @@ _epd_copy:
     sta ETH_TX_FRAME_DEST_MAC,x
     cpx #$00
     bne _epd_copy
-    
+
     lda #$3c
     sta ETH_TX_LEN_LSB
     lda #$00
@@ -787,7 +787,7 @@ _no_fin_in_established:
     lda TCP_RX_DATA_PAYLOAD_SIZE
     ora TCP_RX_DATA_PAYLOAD_SIZE+1
     beq _est_done
-    
+
     ; ----------------- bounded critical section for copy -----------------
     php
     sei
@@ -965,7 +965,7 @@ _ack_what_we_took:
 
     lda #TCP_FLAG_ACK
     jsr ETH_BUILD_TCPIP_PACKET
-    
+
     ; Copy the built frame into a side buffer and flag it for mainline
     ; Clamp frame size to buffer limit
     lda ETH_TX_LEN_LSB
@@ -974,11 +974,11 @@ _ack_what_we_took:
     bne _clamp_to_60         ; Yes, definitely > 60
     cmp #61                  ; Check low byte
     bcc _size_ok             ; < 61, we're good
-    
+
 _clamp_to_60:
     lda #60
     ldx #0
-    
+
 _size_ok:
     sta ACK_REPLY_LEN_L
     stx ACK_REPLY_LEN_H
@@ -1445,7 +1445,7 @@ RBUF_IS_FULL:
     lda NEXT_HI
     cmp TMP_TAIL_HI
     beq _yes
-_no: 
+_no:
     clc
     rts
 _yes:
@@ -1618,9 +1618,9 @@ _use_remote:
     lda REMOTE_IP+3
     sta ARP_QUERY_IP+3
     jsr ARP_QUERY_CACHE
-    bne _IP_found_in_cache 
+    bne _IP_found_in_cache
     jmp _no_mac_yet
-    
+
 _use_gateway:
     lda GATEWAY_IP+0
     sta ARP_QUERY_IP+0
@@ -1658,7 +1658,7 @@ _already_waiting:
 
 
 _IP_found_in_cache:
-    
+
     lda #$08                        ; Ipv4 ethertype
     sta ETH_TX_TYPE
     lda #$00
@@ -1683,7 +1683,7 @@ _IP_found_in_cache:
     lda ETH_TX_LEN_MSB
     adc #$00
     sta ETH_TX_LEN_MSB
-    
+
     clc
     rts
 
@@ -1750,10 +1750,10 @@ _lp_done:
     rts
 
 IPV4_HEADER:
-IPV4_HDR_IHL:       .byte $45                   ; 0100 (Version 4) | 0101 (min 5, max 15)                   
+IPV4_HDR_IHL:       .byte $45                   ; 0100 (Version 4) | 0101 (min 5, max 15)
 IPV4_HDR_DSCP:      .byte $00                   ; Type of service (Low delay, High throuput, Relibility)
 IPV4_HDR_LEN:       .byte $00, $00              ; Length of header + data (16 bits) 0-65535
-IPV4_HDR_IDEN:      .byte $00, $00              ; unique packet id    
+IPV4_HDR_IDEN:      .byte $00, $00              ; unique packet id
 IPV4_HDR_FLGS_OFFS: .byte $00, $00              ; 3 flags, 1 bit each =  reserved (zero), do not fragment, more fragments
 IPV4_HDR_TTL:       .byte $40                   ; time to live hops to dest
 IPV4_HDR_PROTO:     .byte $11                   ; name of protocol for which data to be passed (ICMP=$01, TCP=$06, UDP=$11)
@@ -1843,7 +1843,7 @@ _add_overflow:
     sta IPV4_HDR_CHKSM+1
     rts
 
-_addwords	
+_addwords
     clc				; clear carry
 	lda _num1lo
 	adc _num2lo
@@ -1892,7 +1892,7 @@ BUILD_TCP_HEADER:
     ; 1010 = 5  ...  5x4 = 20 tcp header size (min)
     ; 1111 = 15 ... 15x4 = 60 tcp header size (max)
     ; final 4 bits are reserved, leave zero
-    lda #%01010000                                  
+    lda #%01010000
     sta TCP_HDR_FLGS_OFFS
 
     ; Save the actual TCP header size for checksum calculation
@@ -1900,7 +1900,7 @@ BUILD_TCP_HEADER:
     sta TCP_HEADER_SIZE              ; Add this variable
 
     ; copy ephimeral and remote ports
-    lda LOCAL_PORT+0                
+    lda LOCAL_PORT+0
     sta TCP_HDR_SRC_PORT+0
     lda LOCAL_PORT+1
     sta TCP_HDR_SRC_PORT+1
@@ -1973,7 +1973,7 @@ BUILD_TCP_HEADER:
     ;sta RAND32_RANGE+3
 
     ;jsr RAND32_SEED
-    
+
     ;lda RAND32_VALUE+0                          ; copy sequence number
     ;sta TCP_HDR_SEQ_NUM+0
     ;lda RAND32_VALUE+1
@@ -1998,13 +1998,13 @@ _no_pad:
     sta TCP_DATA_PAYLOAD_WORD_COUNT
 
     jsr CALC_TCP_CHECKSUM
-    
+
     ; copy header to buffer
     ldx #$00
 _lp_copy:
     lda TCP_HDR, x
     sta ETH_TX_FRAME_PAYLOAD+20, x
-    inx 
+    inx
     cpx #20
     bne _lp_copy
 
@@ -2111,7 +2111,7 @@ CALC_TCP_CHECKSUM:
     sta TCP_PSEUDO_HDR+10
     lda TCP_HEADER_SIZE
     sta TCP_PSEUDO_HDR+11
-    
+
     ; add size of data payload
     lda TCP_DATA_PAYLOAD_SIZE
     clc
@@ -2240,7 +2240,7 @@ _no_final_carry:
 
     rts
 
-_addwords	
+_addwords
     clc				; clear carry
 	lda _num1lo
 	adc _num2lo
@@ -2526,8 +2526,8 @@ _TMP_TCP_HDR_LEN:
     .byte $00
 
 ; total bytes from start of IP header to start of TCP payload
-TCP_DATA_OFFSET: 
-    .byte $00   
+TCP_DATA_OFFSET:
+    .byte $00
 
 ;=============================================================================
 ; Tear everything down on RST (or fatal error)
@@ -2589,7 +2589,7 @@ STATUS_LAST_EVENTS: .byte 0
 ETH_STATUS_POLL:
     ; 1) Do non-IRQ work first
     jsr ETH_PROCESS_DEFERRED
-    
+
     ; check for an handle any incoming packets
     jsr ETH_RCV
     jsr ARP_RETRY_TICK
@@ -2818,7 +2818,7 @@ COPY_ASTR_TO_DNS_HOST:
     .byte $00   ; dest hi
     .byte $00                                   ; end of job options
     .byte $00                                   ; copy
-_var_len:                                   
+_var_len:
     .byte $00 ; <\length,
     .byte $00 ; >\length                    ; length lsb, msb
 _var_addr:
@@ -2827,7 +2827,7 @@ _dest_addr:
     .byte <host_str, >host_str, EXEC_BANK             ; dest lsb, msb, bank
     .byte $00                                   ; command high byte
     .word $0000                                 ; modulo (ignored)
-    
+
     ;lda _var_len
     ;clc
     ;adc #$01
@@ -2919,7 +2919,7 @@ _chk_multicast:
 
     lda TCP_LISTEN_ENABLED
     bne _chk_dest_ok
-    
+
     ; ---- Drop multicast (bit4) ----
     lda RX_META1
     and #%00010000
@@ -3083,7 +3083,7 @@ _udp_demux:
     bne _udp_maybe_dns
 
     ; DHCP → handle and return
-inc DHCP_UDP68_HITS    
+inc DHCP_UDP68_HITS
     jsr DHCP_ON_UDP
     rts
 
@@ -3124,8 +3124,8 @@ _lp_bcast:
     bne _not_ours
     cpx #$00
     bne _lp_bcast
-    lda #$02                            ; A=2 (Yes, broadcast packet)    
-    rts                        
+    lda #$02                            ; A=2 (Yes, broadcast packet)
+    rts
 
 _not_ours:
     lda #$00                            ; A=0 (no, packet not for us)
@@ -3497,7 +3497,7 @@ host_str:               .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 ; EtherType - protocol in payload       2 bytes  (eg 0x800 = IPv4, 0x0806 = ARP, 0x86dd = IPv6, 0x8100 = VLAN tagged frame)
 ; Payload - actual data                 46-1500
 ; FCS (CRC32) - frame check sequence    4 bytes (calculated and appended by NIC hardware, not software)
-; 
+;
 ; Min frame size = 64 bytes
 ; max payload = 1500 bytes
 ; max total frame = 1518 bytes without VLAN, 1522 with VLAN tag
@@ -3524,7 +3524,7 @@ ETH_RX_TYPE:
     .byte $00, $00
 ETH_RX_FRAME_PAYLOAD:
     .fill 1600, $00
-RX_CANARY:            
+RX_CANARY:
     .byte $C3, $3C  ; should never change!!
 ETH_RX_FRAME_PAYLOAD_SIZE:
     .byte $00, $00

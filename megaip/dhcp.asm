@@ -688,10 +688,10 @@ _have_two:
     adc #0
     sta _PAY_RD2+2
 
-_PAY_RD1: 
+_PAY_RD1:
     lda $FFFF         ; <-- self-modified operand (hi byte of word)
     sta n2hi
-_PAY_RD2: 
+_PAY_RD2:
     lda $FFFF         ; <-- self-modified operand (lo byte of word)
     sta n2lo
     jsr sum_add
@@ -725,7 +725,7 @@ _maybe_odd:
     sta _PAY_RDL+1
     lda _PAY_RD1+2
     sta _PAY_RDL+2
-_PAY_RDL: 
+_PAY_RDL:
     lda $FFFF         ; reads the single remaining byte
     sta n2hi
     lda #$00
@@ -991,7 +991,7 @@ _clear4:
     lda _tmp_hi
     bmi _opts_none              ; negative
     bne _opts_ff                ; > 255
-    lda _tmp_lo                 ; 0..255 
+    lda _tmp_lo                 ; 0..255
     jmp _opts_store
     ;bne _opts_store
     ; exactly zero

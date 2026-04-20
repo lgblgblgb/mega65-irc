@@ -54,6 +54,7 @@ extern void clear_input ( void );
 extern void add_input ( const byte c );
 extern void set_status_line_writing ( const bool status );
 extern word str2dec ( const char *s );
+extern byte strappend ( char *base, byte pos, const char *add );
 
 extern const char build_info[];
 

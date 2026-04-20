@@ -155,7 +155,7 @@ void arch_refresh ( void )
 						case SDL_SCANCODE_LEFT:		k = 0x9D9D;	break;
 						case SDL_SCANCODE_UP:		k = 0x9191;	break;
 						case SDL_SCANCODE_DOWN:		k = 0x1111;	break;
-						case SDL_SCANCODE_F1:		k = 0x8589;	break;
+						case SDL_SCANCODE_F1:		k = 0xF1F1;	break;
 						default:					break;
 					}
 					if (k != -1)

@@ -653,7 +653,7 @@ inc DEBUG
     sta _rd_nbyte+1
     sta _rd_nbyte+1
     sta _rd_peek+1
-    sta _rd_win+1 
+    sta _rd_win+1
 
     lda #>ETH_RX_FRAME_PAYLOAD+UDP_DATA_BASE
     adc #$00
@@ -679,17 +679,17 @@ inc DEBUG
     sta _rd_flags_lo+2
     sta _rd_nbyte+2
     sta _rd_peek+2
-    sta _rd_win+2 
+    sta _rd_win+2
 
     ; ---- ID must match (so it’s for our query) ----
     ldy #0
-_rd_dnsid_hi: 
+_rd_dnsid_hi:
     .byte $B9, $00, $00
     cmp DNS_MSG_ID_HI
     bne _not_dns
     jsr _ADV_INY
 
-_rd_dnsid_lo: 
+_rd_dnsid_lo:
     .byte $B9, $00, $00
     cmp DNS_MSG_ID_LO
     bne _not_dns
@@ -699,18 +699,18 @@ inc DEBUG
     ; ---- RCODE/QR/TC sanity check
     ; Flags sanity: QR=1, TC=0, RCODE=0
     ldy #2
-_rd_flags_hi: 
+_rd_flags_hi:
     .byte $B9, $00, $00     ; QR bit check.  Query (0) or Response (1)
-    and #%10000000          
+    and #%10000000
     beq _not_dns            ; not a response, bail
     ldy #2
-_rd_flags_hi2: 
+_rd_flags_hi2:
     .byte $B9, $00, $00     ; get TC (truncated) setting
     and #%00000010
-    bne _not_dns            ; truncated -> silently ignore truncated replies 
+    bne _not_dns            ; truncated -> silently ignore truncated replies
     ldy #3
-_rd_flags_lo:   
-    .byte $B9, $00, $00     ; get RCODE (Response Code) 0=No Error, 1=Format Error, 2=Server Failed to Process, 
+_rd_flags_lo:
+    .byte $B9, $00, $00     ; get RCODE (Response Code) 0=No Error, 1=Format Error, 2=Server Failed to Process,
     and #$0F                ; 3=Domain Doesnt Exist, 4=Not Implemented,5=Svr Refused
     bne _fail               ; non-zero RCODE -> fail
 
@@ -719,11 +719,11 @@ inc DEBUG
     ; Get ANCOUNT - 16 bit field that tells how many Resource Records
     ; are in the Answer section of the message
     ldy #6
-_rd_anc_hi: 
+_rd_anc_hi:
     .byte $B9, $00, $00
     sta TMP0
     jsr _ADV_INY
-_rd_anc_lo: 
+_rd_anc_lo:
     .byte $B9, $00, $00
     sta TMP1
     lda TMP0
@@ -812,11 +812,11 @@ _after_name:
 inc DEBUG
     ; ============================================================
     ; TYPE (2) - 1=ipv4, 5=CNAME
-_rd_type_hi: 
+_rd_type_hi:
     .byte $B9, $00, $00
     sta DNS_DBG_TYPE_HI             ; <--- DEBUG
     jsr _ADV_INY
-_rd_type_lo: 
+_rd_type_lo:
     .byte $B9, $00, $00
     sta DNS_DBG_TYPE_LO             ; <--- DEBUG
     sta tmp_type                    ; save type lo
@@ -824,11 +824,11 @@ _rd_type_lo:
     ; ============================================================
     ; CLASS (2) - 1=internet
     jsr _ADV_INY
-_rd_class_hi: 
+_rd_class_hi:
     .byte $B9, $00, $00
     sta DNS_DBG_CLASS_HI            ; <--- DEBUG
     jsr _ADV_INY
-_rd_class_lo: 
+_rd_class_lo:
     .byte $B9, $00, $00
     sta DNS_DBG_CLASS_LO            ; <--- DEBUG
     sta tmp_class_lo                ; save class lo
@@ -837,7 +837,7 @@ _rd_class_lo:
     jsr _ADV_INY
 
     ; skip TTL (4)
-    ldx #$04 
+    ldx #$04
 -   jsr _ADV_INY
     dex
     bne -
@@ -846,14 +846,14 @@ inc DEBUG
 
     ; ============================================================
     ; RDLEN (2)
-_rd_rdlen_hi: 
+_rd_rdlen_hi:
     .byte $B9, $00, $00
     sta DNS_DBG_RDLEN_HI            ; <--- DEBUG
     sta tmp_rdlen_hi
     jsr _ADV_INY
-_rd_rdlen_lo: 
+_rd_rdlen_lo:
     .byte $B9, $00, $00
-    sta DNS_DBG_RDLEN_LO            ; <--- DEBUG   
+    sta DNS_DBG_RDLEN_LO            ; <--- DEBUG
     sta tmp_rdlen_lo
 
     ; Fast path: TYPE=A (1), CLASS=IN (1), RDLEN=4
@@ -877,11 +877,11 @@ inc DEBUG
 _read_ipv4:
     ; read 4-byte RDATA (IPv4)
     jsr _ADV_INY
-_rd_a0: 
+_rd_a0:
     .byte $B9, $00, $00
     sta DNS_RESULT_IP+0
     jsr _ADV_INY
-_rd_a1: 
+_rd_a1:
     .byte $B9, $00, $00
     sta DNS_RESULT_IP+1
     jsr _ADV_INY
@@ -889,7 +889,7 @@ _rd_a2:
     .byte $B9, $00, $00
     sta DNS_RESULT_IP+2
     jsr _ADV_INY
-_rd_a3: 
+_rd_a3:
     .byte $B9, $00, $00
     sta DNS_RESULT_IP+3
 
@@ -921,7 +921,7 @@ sta DEBUG                       ; DEBUG - “entered CNAME branch”
     sta q_guard
 
 _c_copy_next:
-_rd_copy_abs: 
+_rd_copy_abs:
     .byte $B9, $00, $00     ; A = len/0 or C0|hi6
     beq _c_done_zero
 inc DEBUG
@@ -1001,7 +1001,7 @@ _rd_ptrlo_from_copy:
     ldy #0
 
 _c_ptr_walk:
-_rd_ptr_abs: 
+_rd_ptr_abs:
     .byte $B9, $00, $00
     beq _c_done_zero
     tax
@@ -1219,7 +1219,7 @@ _fail:
 _not_dns:
     rts
 
-; === Skip a DNS NAME at BASE+Y (labels and/or compression). 
+; === Skip a DNS NAME at BASE+Y (labels and/or compression).
 ; On return: Y = first byte after NAME, C=0 OK, C=1 malformed
 _DNS_SKIP_NAME:
     clc                         ; default to success
@@ -1306,7 +1306,7 @@ _ADV_INY:
     inc _rd_flags_lo+2
     inc _rd_nbyte+2
     inc _rd_peek+2
-    inc _rd_win+2 
+    inc _rd_win+2
 _ret:
     rts
 

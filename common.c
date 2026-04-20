@@ -254,3 +254,14 @@ word str2dec ( const char *s )
 	}
 	return r;
 }
+
+
+// Silly function and only works <256 byte long strings
+// But good enough as MEGA-IP does not support send more anyway
+byte strappend ( char *base, byte pos, const char *add )
+{
+	while (*add)
+		base[pos++] = *add++;
+	base[pos] = '\0';
+	return pos;
+}

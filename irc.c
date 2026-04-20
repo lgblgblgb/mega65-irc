@@ -24,6 +24,7 @@ static byte current_ip[4] = {192,168,0,153};
 static word current_port = 6667;
 static char current_nick[17] = "LGBmega";
 static const char space_str[] = " ";
+static const char crlf[] = "\r\n";
 static const char missing_parameters[] = "Missing cmd par(s)\n";
 static const char already_connected[] = "Already connected\n";
 static enum { FSM_OFFLINE, FSM_CONNECT, FSM_CONNECTED, FSM_ONLINE } fsm = FSM_OFFLINE;
@@ -78,7 +79,7 @@ static void cmd_server ( void )
 		static byte ip_addr[4];
 		word i, d;
 		for (i = 0; i < 4; i++) {
-			char *ip = strtok(r1, ".");
+			const char *ip = strtok(r1, ".");
 			if (!ip)
 				goto bad;
 			r1 = NULL;	// for strtok() in non-first cases
@@ -122,6 +123,30 @@ static void cmd_nick ( void )
 }
 
 
+static char tx_buffer[256];
+
+
+static void cmd_join ( void )
+{
+	char *channel = strtok(NULL, space_str);
+	if (channel) {
+		byte l = strappend(tx_buffer, 0, "JOIN ");
+		l = strappend(tx_buffer, l, channel);
+		l = strappend(tx_buffer, l, crlf);
+#ifndef		MEGA65
+		net_write((byte*)tx_buffer, l);
+#endif
+	} else
+		write_error(missing_parameters);
+}
+
+
+static void cmd_motd ( void )
+{
+	write_error("TODO\n");
+}
+
+
 static void cmd_help ( void );
 
 
@@ -130,6 +155,8 @@ static const struct command_st {
 	void (*callback)(void);
 } commands[] = {
 	{ "help",	cmd_help	},
+	{ "join",	cmd_join	},
+	{ "motd",	cmd_motd	},
 	{ "nick",	cmd_nick	},
 	{ "quit",	arch_exit	},
 	{ "server",	cmd_server	},
@@ -176,13 +203,14 @@ static bool try_to_interpret_as_slash_command ( char *p )
 }
 
 
-static void handle_kbd_input ( void )
+static void do_kbd_stuff ( void )
 {
 	const byte b = arch_getkey();
 	if (!b)			// Do nothing, if no key is pressed
 		return;
 	if (b == 13) {		// Return
 		if (!try_to_interpret_as_slash_command(input_string)) {
+			// If not a slash command, interpret it as a general channel message
 			const byte l = strlen(input_string);
 			write_string(input_string);
 			write_char('\n');
@@ -200,11 +228,10 @@ static void handle_kbd_input ( void )
 		clear_input();
 		return;
 	}
-	if (b == 0x85) {	// F1
-		if (fsm == FSM_OFFLINE) {
-			write_string("Quick-connect\n");
+	if (b == 0xF1) {	// F1
+		if (fsm == FSM_OFFLINE)
 			do_connect();
-		} else
+		else
 			write_error(already_connected);
 		return;
 	}
@@ -226,22 +253,24 @@ void main_entry ( void )
 	update_status();
 	show_build_info();
 #ifdef	MEGA65
+	memcpy(screen_mem + 23*80 + 38, "WAIT", 4);
 	write_string("Resetting ethernet controller\n");
 #endif
 	net_init();
 #ifdef	MEGA65
 	net_do_dhcp();
+	update_status();		// will clear the "WAIT" message
 #endif
 	write_colour_string(
 		"Connect a server (no DNS yet): /server IP port YourNick\n"
-		"or press F1 to connect with the default settings.\n"
+		// "or press F1 to connect with the default settings.\n"
 		"(to list slash commands: /help)\n",
 		INSTRUCTION_COLOUR
 	);
 	clear_input();	// also initializes input stuff and shows "cursor"
 	consume_keys();	// make sure keyboard is being empty
 	for (;;) {
-		handle_kbd_input();
+		do_kbd_stuff();
 		switch (fsm) {
 			case FSM_OFFLINE:
 				break;
@@ -256,6 +285,7 @@ void main_entry ( void )
 		if (n != -1 && (n & 1)) {
 			if (!init_sent) {
 				write_string("Connected.\n");
+				fsm = FSM_CONNECTED;
 				update_status();
 				static const char init_cmds[] = "USER lgb +iw lgb :MEGA65 ruleZ\r\nNICK lgbx\r\n";
 				if (net_write((byte*)init_cmds, sizeof(init_cmds) - 1) != -1) {

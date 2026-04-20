@@ -88,7 +88,7 @@ _ahead:
 ;    bne _wait
 
 
-    lda $d77c 
+    lda $d77c
     sta RAND32_VALUE+0
     lda $d77d
     sta RAND32_VALUE+1

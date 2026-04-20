@@ -205,6 +205,8 @@ sys_init:
 .EXPORT	_arch_exit
 _arch_exit:
 	SEI
+	LDA	#$10
+	TRB	$D07A
 	LDA	#0
 	TAX
 	TAY
@@ -362,7 +364,7 @@ nmi_handler:
 ; All original 64tass labels are prefixed with "megaip_" though to avoid any possible collusion
 ; with my own symbols
 
-.INCLUDE "megaip/eth.exp"
+.INCLUDE "megaip/eth.i65"
 
 
 

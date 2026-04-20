@@ -113,8 +113,8 @@ STAY_FAR .macro hi, address
     .byte <tmp, >tmp, EXEC_BANK
 lobyte:
     .byte <\address
-hibyte: 
-    .byte >\address 
+hibyte:
+    .byte >\address
 bank:
     .byte `\address         ; src = $FFDE800
     .byte $00
@@ -167,8 +167,8 @@ LDAY_FAR .macro hi, address
     .byte $00              ; length MSB = 0
 lobyte:
     .byte <\address
-hibyte: 
-    .byte >\address 
+hibyte:
+    .byte >\address
 bank:
     .byte `\address         ; src = $FFDE800
     .byte <tmp, >tmp, EXEC_BANK
