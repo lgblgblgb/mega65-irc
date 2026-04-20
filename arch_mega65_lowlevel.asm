@@ -277,7 +277,7 @@ _mega65_scroller:
 
 
 vgafont:
-	.INCBIN	"font.bin"
+	.INCBIN	"assets/font.bin"
 vgafont_size = * - vgafont
 
 .IF vgafont_size <> $1000

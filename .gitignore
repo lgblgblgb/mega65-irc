@@ -7,7 +7,7 @@ tags
 *.tmp
 *.bak
 *.BAK
-/build
+/bin/build
 /irc
 /irc.lab
 /irc.map

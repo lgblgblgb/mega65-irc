@@ -64,7 +64,7 @@ the main reasons:
 MEGA65 specific low level assembly routines, and the BASIC stub itself with the
 init code. It also contains things like the "gateway" to call MEGA-IP (eth.bin)
 routines (which requires memory mapping change, so those routines are in the
-HIMEM segment). It also takes care of font.bin to copy into the "character RAM"
+HIMEM segment). It also takes care of `font.bin` to copy into the "character RAM"
 of MEGA65, also putting `eth.bin` into its place (band 4, from `$2000`).
 
 ### arch_mega65.c
@@ -81,7 +81,7 @@ and screen rendering.
 Common C routines between the MEGA65 and UNIX versions, mainly screen write
 routines and such.
 
-### font.bin
+### assets/font.bin
 
 Binary 4K font (8x16 pixels), in MEGA65 "interlaced" format. It's a standard
 VGA font, which is needed to use ASCII directly, without dealing PETSCII-ASCII
@@ -94,7 +94,7 @@ comment:
 These fonts come from ftp://ftp.simtel.net/pub/simtelnet/msdos/screen/fntcol16.zip
 The package is (c) by Joseph Gil. The individual fonts are public domain.
 
-### font.h
+### assets/font.h
 
 The same font as in font.bin but in continous format and in C source code
 syntax.
@@ -119,7 +119,7 @@ to `eth.i65`. If you ever need to modify these files, you must run `make` in the
 megaip/ directory (you also need 64tass assembler for that), then going back
 to the project root, you need `make clean` and `make` to safely rebuild things.
 
-### mega65.ld
+### assets/mega65.ld
 
-Linker configuration file for LD65 (from the CC65 package). It's basically a
+Linker configuration file for `ld65` (from the `CC65` package). It's basically a
 hacked C64 default config, adjusted to MEGA65 and expanded with my needs.

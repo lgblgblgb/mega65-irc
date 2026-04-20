@@ -27,7 +27,7 @@ CC	= cl65
 LD65	= ld65
 CA65	= ca65
 CFLAGS	= -DMEGA65 -O -Oi -Or -Os -t none --cpu 65c02 -r --standard c99
-LDFLAGS	= --config mega65.ld --mapfile irc.map -v -vm -Ln irc.lab
+LDFLAGS	= --config assets/mega65.ld --mapfile irc.map -v -vm -Ln irc.lab
 ARCH	= mega65
 AROBJS	= arch_mega65_lowlevel.o arch_mega65.o net_mega65.o
 SYSLIB	= /usr/share/cc65/lib/none.lib
@@ -39,7 +39,7 @@ ARCH	= native
 AROBJS	= arch_unix.o net_unix.o
 endif
 
-BDIR	:= build/$(ARCH)
+BDIR	:= bin/build/$(ARCH)
 DOOBJS	:= $(addprefix $(BDIR)/, $(COBJS) $(AROBJS))
 
 all:
@@ -56,7 +56,7 @@ $(BINUNIX): $(DOOBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 build_info.c:
-	bash ./build_info.sh > $@
+	bash assets/build_info.sh > $@
 
 $(BDIR)/arch_mega65_lowlevel.o: arch_mega65_lowlevel.asm
 	$(CA65) -t none -o $@ $<
@@ -88,6 +88,6 @@ publish:
 	cp $(BINMEGA) $(D81NAME) bin/
 
 clean:
-	rm -f $(BINUNIX) $(BINMEGA) build/*/*.o $(D81NAME) $(D81NAME).tmp irc.lab irc.map build_info.c
+	rm -f $(BINUNIX) $(BINMEGA) bin/build/*/*.o $(D81NAME) $(D81NAME).tmp irc.lab irc.map build_info.c
 
 .PHONY: all mega65 xemu run clean publish
