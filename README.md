@@ -23,11 +23,11 @@ TODO, if it does something useful ;)
 
 ## Just download
 
-Look into the `bin/` directory for a D81 image or for a "PRG" file.
+Look into the `bin/` directory for a D81 image or for a `PRG` file.
 
 ## Compile yourself
 
-To compile, you need the "CC65" suite. The provided MEGA-IP package requires
+To compile, you need the `CC65` suite. The provided MEGA-IP package requires
 however 64TASS, but it's already pre-compiled, so unless you want to modify
 MEGA-IP itself, you don't need that at all. You also need GNU make.
 
@@ -47,7 +47,7 @@ fiddle with the I/O feature to switch 2K colour RAM on and off).
 The lower 32K RAM is normally in not mapped state, unless MEGA-IP (eth.bin)
 is called, when it's mapped to bank 4, expect for the very first 8K. Since
 the program code itself is there too, eth.bin functions are called via
-the "HIMEM" segment, which starts at $E000, but since the last 8K in the
+the `HIMEM` segment, which starts at `$E000`, but since the last 8K in the
 upper half of 64K is mapped to bank1, physically it's in bank1.
 
 
@@ -55,7 +55,7 @@ This program written in assembly and C. The size of the binary is quite large,
 the main reasons:
 
 * It contains a 4K size 8x16 pixel "VGA-style" font
-* It contains the ~16K size "eth.bin" embedded (MEGA-IP)
+* It contains the ~16K size `eth.bin` embedded (MEGA-IP)
 
 ## Source files
 
@@ -114,8 +114,8 @@ Networking implementation for the MEGA65 versions, using MEGA-IP, through the
 
 ### megaip/*.asm
 
-The MEGA-IP ("eth.bin") source code, pre-compiled already into eth.bin and labels
-to eth.i65. If you ever need to modify these files, you must run `make` in the
+The MEGA-IP (`eth.bin`) source code, pre-compiled already into eth.bin and labels
+to `eth.i65`. If you ever need to modify these files, you must run `make` in the
 megaip/ directory (you also need 64tass assembler for that), then going back
 to the project root, you need `make clean` and `make` to safely rebuild things.
 
