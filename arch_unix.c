@@ -17,7 +17,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 #include <stdio.h>
 #include "arch.h"
 #include <SDL.h>
-#include "assets/font.h"
+#include "assets/font-unix.h"
 
 
 byte screen_mem[80 * 25];

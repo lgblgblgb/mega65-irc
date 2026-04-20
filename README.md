@@ -44,9 +44,9 @@ is the UNIX executable.
 to the last 8K in bank1, to have the 2K colour RAM (without the need to
 fiddle with the I/O feature to switch 2K colour RAM on and off).
 
-The lower 32K RAM is normally in not mapped state, unless MEGA-IP (eth.bin)
+The lower 32K RAM is normally in not mapped state, unless MEGA-IP (`eth.bin`)
 is called, when it's mapped to bank 4, expect for the very first 8K. Since
-the program code itself is there too, eth.bin functions are called via
+the program code itself is there too, `eth.bin` functions are called via
 the `HIMEM` segment, which starts at `$E000`, but since the last 8K in the
 upper half of 64K is mapped to bank1, physically it's in bank1.
 
@@ -54,15 +54,16 @@ upper half of 64K is mapped to bank1, physically it's in bank1.
 This program written in assembly and C. The size of the binary is quite large,
 the main reasons:
 
-* It contains a 4K size 8x16 pixel "VGA-style" font
-* It contains the ~16K size `eth.bin` embedded (MEGA-IP)
+* It contains a 4K long 8x16 pixel "VGA-style" font
+* It contains the ~16K long `eth.bin` embedded (MEGA-IP)
+* C code compiled by `CC65`, is not so short ...
 
 ## Source files
 
 ### arch_mega65_lowlevel.asm
 
 MEGA65 specific low level assembly routines, and the BASIC stub itself with the
-init code. It also contains things like the "gateway" to call MEGA-IP (eth.bin)
+init code. It also contains things like the "gateway" to call MEGA-IP (`eth.bin`)
 routines (which requires memory mapping change, so those routines are in the
 HIMEM segment). It also takes care of `font.bin` to copy into the "character RAM"
 of MEGA65, also putting `eth.bin` into its place (band 4, from `$2000`).
@@ -81,7 +82,7 @@ and screen rendering.
 Common C routines between the MEGA65 and UNIX versions, mainly screen write
 routines and such.
 
-### assets/font.bin
+### assets/font-mega65.bin
 
 Binary 4K font (8x16 pixels), in MEGA65 "interlaced" format. It's a standard
 VGA font, which is needed to use ASCII directly, without dealing PETSCII-ASCII
@@ -94,7 +95,7 @@ comment:
 These fonts come from ftp://ftp.simtel.net/pub/simtelnet/msdos/screen/fntcol16.zip
 The package is (c) by Joseph Gil. The individual fonts are public domain.
 
-### assets/font.h
+### assets/font-unix.h
 
 The same font as in font.bin but in continous format and in C source code
 syntax.
@@ -114,10 +115,14 @@ Networking implementation for the MEGA65 versions, using MEGA-IP, through the
 
 ### megaip/*.asm
 
-The MEGA-IP (`eth.bin`) source code, pre-compiled already into eth.bin and labels
+The MEGA-IP (`eth.bin`) source code, pre-compiled already into `eth.bin` and labels
 to `eth.i65`. If you ever need to modify these files, you must run `make` in the
 megaip/ directory (you also need 64tass assembler for that), then going back
 to the project root, you need `make clean` and `make` to safely rebuild things.
+
+For more information on this project, please visit: https://github.com/mega65-c65/mega-ip
+
+NOTE: MEGA-IP was not written by me.
 
 ### assets/mega65.ld
 

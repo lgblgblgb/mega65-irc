@@ -21,7 +21,7 @@ ETHLOAD	= mega65_etherload
 C1541	= c1541
 BINUNIX	= irc
 BINMEGA	= irc.prg
-D81NAME	= irc.d81
+D81	= irc.d81
 ifneq	(,$(filter $(BINMEGA),$(MAKECMDGOALS)))
 CC	= cl65
 LD65	= ld65
@@ -76,18 +76,20 @@ run:
 	$(MAKE) $(BINUNIX)
 	./$(BINUNIX)
 
-$(D81NAME): $(BINMEGA)
-	echo "format mega65-irc,dd d81 $(D81NAME).tmp 8\nwrite $(BINMEGA) irc\ndir" | $(C1541)
-	mv $(D81NAME).tmp $(D81NAME)
+$(D81): $(BINMEGA)
+	rm -f $(D81).tmp
+	echo "format mega65-irc,dd d81 $(D81).tmp 8\nwrite $(BINMEGA) irc\ndir" | $(C1541)
+	mv $(D81).tmp $(D81)
 
 publish:
 	$(MAKE) clean
 	$(MAKE) $(BINUNIX)
 	$(MAKE) $(BINMEGA)
-	$(MAKE) $(D81NAME)
-	cp $(BINMEGA) $(D81NAME) bin/
+	$(MAKE) $(D81)
+	cp $(BINMEGA) $(D81) bin/
+	ls -l bin/$(BINMEGA) bin/$(D81)
 
 clean:
-	rm -f $(BINUNIX) $(BINMEGA) bin/build/*/*.o $(D81NAME) $(D81NAME).tmp irc.lab irc.map build_info.c
+	rm -f $(BINUNIX) $(BINMEGA) bin/build/*/*.o $(D81) $(D81).tmp irc.lab irc.map build_info.c
 
 .PHONY: all mega65 xemu run clean publish
