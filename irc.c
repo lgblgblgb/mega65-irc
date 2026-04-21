@@ -28,6 +28,9 @@ static const char crlf[] = "\r\n";
 static const char missing_parameters[] = "Missing cmd par(s)\n";
 static const char already_connected[] = "Already connected\n";
 static enum { FSM_OFFLINE, FSM_CONNECT, FSM_CONNECTED, FSM_ONLINE } fsm = FSM_OFFLINE;
+static char rx_buffer[256];
+static char tx_buffer[256];
+static unsigned int rx_fill = 0;
 
 
 static void update_status ( void )
@@ -121,9 +124,6 @@ static void cmd_nick ( void )
 	// TODO: if connected, send to the server too!
 	// TODO: or only send to the server if connected, and change nick on server's response?
 }
-
-
-static char tx_buffer[256];
 
 
 static void cmd_join ( void )
@@ -239,6 +239,9 @@ static void do_kbd_stuff ( void )
 }
 
 
+/* ---- instead of "main", we have the control at "main_entry" after startup ---- */
+
+
 void main_entry ( void )
 {
 #ifndef	MEGA65
@@ -260,15 +263,28 @@ void main_entry ( void )
 #ifdef	MEGA65
 	net_do_dhcp();
 	update_status();		// will clear the "WAIT" message
+#if 1
+	if (PEEK(0xF700) && PEEKW(0xF704) && PEEK(0xF706)) {
+		memcpy(current_ip, (void*)0xF700, 4);
+		current_port = *(word*)0xF704;
+		strncpy(current_nick, (char*)0xF706, sizeof current_nick);
+		current_nick[sizeof(current_nick) - 1] = '\0';
+		write_string("Found default config: ");
+		write_ip_and_port(current_ip, current_port);
+		write_char(' ');
+		write_string(current_nick);
+		write_colour_string("\nPress F1 to connect with that config. Or:\n", INSTRUCTION_COLOUR);
+	} else
+		write_colour_string("Hint: run program ircsetup to set up default parameters\n", INSTRUCTION_COLOUR);
+#endif
 #endif
 	write_colour_string(
 		"Connect a server (no DNS yet): /server IP port YourNick\n"
-		// "or press F1 to connect with the default settings.\n"
-		"(to list slash commands: /help)\n",
+		"(list all slash cmds: /help)\n",
 		INSTRUCTION_COLOUR
 	);
 	clear_input();	// also initializes input stuff and shows "cursor"
-	consume_keys();	// make sure keyboard is being empty
+	consume_keys();	// make sure keyboard is empty
 	for (;;) {
 		do_kbd_stuff();
 		switch (fsm) {
@@ -284,19 +300,24 @@ void main_entry ( void )
 		const int n = net_pump();
 		if (n != -1 && (n & 1)) {
 			if (!init_sent) {
+				byte l = strappend(tx_buffer, 0, "USER ");
+				l = strappend(tx_buffer, l, current_nick);
+				l = strappend(tx_buffer, l, " +iw ");
+				l = strappend(tx_buffer, l, current_nick);
+				l = strappend(tx_buffer, l, " :MEGA65 ruleZ\r\nNICK ");
+				l = strappend(tx_buffer, l, current_nick);
+				l = strappend(tx_buffer, l, crlf);
 				write_string("Connected.\n");
 				fsm = FSM_CONNECTED;
 				update_status();
-				static const char init_cmds[] = "USER lgb +iw lgb :MEGA65 ruleZ\r\nNICK lgbx\r\n";
-				if (net_write((byte*)init_cmds, sizeof(init_cmds) - 1) != -1) {
-					write_colour_string(init_cmds, CURSOR_COLOUR);
+				// static const char init_cmds[] = "USER lgb +iw lgb :MEGA65 ruleZ\r\nNICK lgbx\r\n";
+				if (net_write((byte*)tx_buffer, l) != -1) {
+					write_colour_string(tx_buffer, CURSOR_COLOUR);
 					init_sent = true;
 				}
 			}
 			// Emptying received data byte-by-byte
 			for (;;) {
-				static byte rx_buffer[256];
-				static int rx_fill = 0;
 				const int b = net_fetch_byte();
 				if (b < 0)
 					break;
@@ -304,12 +325,12 @@ void main_entry ( void )
 					if (rx_fill) {
 						rx_buffer[rx_fill] = 0;
 						printf("IRC: new message received %d bytes: %s\n", rx_fill, rx_buffer);
-						if (!strncmp("PING ", (char*)rx_buffer, 5)) {
+						if (!strncmp("PING ", rx_buffer, 5)) {
 							puts("IRC: ping message, let's pong it!");
 							rx_buffer[1] = 'O';		// change "PING" to PONG with 'I'->'O' change
 							rx_buffer[rx_fill++] = '\r';
 							rx_buffer[rx_fill++] = '\n';
-							net_write(rx_buffer, rx_fill);	// then transmit as answer ...
+							net_write((byte*)rx_buffer, rx_fill);	// then transmit as answer ...
 						} else {
 							write_string_utf8((char*)rx_buffer);
 							write_char('\n');
@@ -323,7 +344,6 @@ void main_entry ( void )
 					printf("IRC: TOO LONG MESSAGE - TRUNCATING\n");
 				}
 			}
-
 		}
 #endif
 		arch_refresh();

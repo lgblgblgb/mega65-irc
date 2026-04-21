@@ -22,6 +22,7 @@ C1541	= c1541
 BINUNIX	= irc
 BINMEGA	= irc.prg
 D81	= irc.d81
+BINSUP	= assets/ircsetup.prg
 ifneq	(,$(filter $(BINMEGA),$(MAKECMDGOALS)))
 CC	= cl65
 LD65	= ld65
@@ -76,9 +77,10 @@ run:
 	$(MAKE) $(BINUNIX)
 	./$(BINUNIX)
 
-$(D81): $(BINMEGA)
+$(D81):
+	$(MAKE) $(BINMEGA)
 	rm -f $(D81).tmp
-	echo "format mega65-irc,dd d81 $(D81).tmp 8\nwrite $(BINMEGA) irc\ndir" | $(C1541)
+	echo "format mega65-irc,dd d81 $(D81).tmp 8\nwrite $(BINMEGA) irc\nwrite $(BINSUP) ircsetup\ndir" | $(C1541)
 	mv $(D81).tmp $(D81)
 
 publish:
@@ -86,7 +88,7 @@ publish:
 	$(MAKE) $(BINUNIX)
 	$(MAKE) $(BINMEGA)
 	$(MAKE) $(D81)
-	cp $(BINMEGA) $(D81) bin/
+	cp $(BINMEGA) $(D81) $(BINSUP) bin/
 	ls -l bin/$(BINMEGA) bin/$(D81)
 
 clean:

@@ -29,19 +29,35 @@ MAP_Z_GLOBAL	= $81
 
 .DEFINE SELF_BANK	0
 
+
 .SEGMENT	"EXEHDR"
 .SCOPE
-	.WORD	nextline
-	.WORD	2026
-	.WORD	$02FE		; "BANK"
+	BASTOK_BANK	= $02FE
+	BASTOK_BLOAD	= $11FE
+	BASTOK_POKE	= $97
+	BASTOK_SYS	= $9E
+	BASTOK_TRAP	= $D7
+	BASTOK_EQU_SIGN	= $B2
+	.WORD	line2, 1
+	.BYTE	"X",BASTOK_EQU_SIGN,"$1F700:",BASTOK_POKE,"X,0:",BASTOK_TRAP,"3"
+	.BYTE	0
+line2:
+	.WORD	line3, 2
+	.WORD	BASTOK_BLOAD
+	.BYTE	34,"IRC.CFG,S",34,",P(X),R"
+	.BYTE	0
+line3:
+	.WORD	nonextline, 3
+	.BYTE	BASTOK_TRAP,":"
+	.WORD	BASTOK_BANK
 	.BYTE	"0:"
-	.BYTE	$9E		; "SYS"
+	.BYTE	BASTOK_SYS
 	.BYTE	$30+.LOBYTE((stub_main .MOD 10000)/1000)
 	.BYTE	$30+.LOBYTE((stub_main .MOD  1000)/ 100)
 	.BYTE	$30+.LOBYTE((stub_main .MOD   100)/  10)
 	.BYTE	$30+.LOBYTE( stub_main .MOD    10)
 	.BYTE	0
-nextline:
+nonextline:
 	.WORD   0
 .ENDSCOPE
 

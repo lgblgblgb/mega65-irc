@@ -4,7 +4,7 @@ PYTHON		= python3
 VGA_FONT	= font-original-vga.bin
 MEGA_FONT_BIN	= font-mega65.bin
 UNIX_FONT_H	= font-unix.h
-PRGS_NEEDED	= setup.prg
+PRGS_NEEDED	= ircsetup.prg
 
 all: $(PRGS_NEEDED) $(MEGA_FONT_BIN) $(UNIX_FONT_H)
 

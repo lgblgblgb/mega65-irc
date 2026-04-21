@@ -10,10 +10,10 @@ SYMBOLS {
 MEMORY {
     ZP:       file = "", define = yes, start = $0002,           size = $001A;
     LOADADDR: file = %O,               start = %S - 2,          size = $0002;
-    HEADER:   file = %O, define = yes, start = %S,              size = $000D+3;
+    HEADER:   file = %O, define = yes, start = %S,              size = $000D+3+44+4;
     MAIN:     file = %O, define = yes, start = __HEADER_LAST__, size = __HIMEM__ - __HEADER_LAST__;
     BSS:      file = "",               start = __ONCE_RUN__,    size = __HIMEM__ - __STACKSIZE__ - __ONCE_RUN__;
-    MEM_E000: file = "",               start = $E000,           size = $F800 - $E000;
+    MEM_E000: file = "",               start = $E000,           size = $F700 - $E000;	# Leaving 256 bytes before $F800 for config
 }
 SEGMENTS {
     ZEROPAGE: load = ZP,       type = zp;
