@@ -211,11 +211,7 @@ sys_init:
 	TAY
 	CLI			; *** WARNING: interrupts are enabled now ***
 	JSR	_main_entry	; call the C entry point
-@halt:
-	INC	$D020
-	JMP	@halt
-
-
+	JMP	_arch_exit
 
 
 .EXPORT	_arch_exit

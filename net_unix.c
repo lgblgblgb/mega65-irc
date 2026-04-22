@@ -241,7 +241,7 @@ int net_get_write_buffer_size ( void )
 }
 
 
-int net_write ( const byte *buffer, const int size )
+int net_write ( const byte *buffer, const byte size )
 {
 	if (fsm != NET_CONNECTED)
 		return -1;

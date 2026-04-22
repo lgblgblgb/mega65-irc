@@ -208,6 +208,7 @@ void net_connect_init ( const byte *ip, const word port )
 	// Start connection
 	eth_call_id = ETH_TCP_CONNECT_START;
 	eth_call();
+#if	0
 	for (;;) {
 		// Polling
 		eth_call_id = ETH_CONNECT_POLL;
@@ -223,4 +224,48 @@ void net_connect_init ( const byte *ip, const word port )
 		wait(1);	// without this, it does not work??
 		screen_mem[24*80 - 2] = screen_mem[24*80 - 1];
 	}
+#endif
+}
+
+
+int net_write ( const byte *buffer, const byte size )
+{
+	// Copy buffer to MEGA65-IP (also sets up the size)
+	copy_to_megaip_source = (word)buffer;
+	copy_to_megaip_length = size;
+	copy_to_megaip_();
+	// Ask MEGA65-IP to send
+	eth_call_id = ETH_TCP_SEND;
+	eth_call();
+	// Wtf we should do? [return value, TODO]
+	return size;
+}
+
+
+int net_fetch_byte ( void )
+{
+	// Carry set if buffer empty, clear if success
+	eth_call_id = ETH_RBUF_GET;
+	eth_call();
+	return eth_call_f & 1 ? -1 : eth_call_a;
+}
+
+
+int net_pump ( void )
+{
+	// "network pump"
+	eth_call_id = ETH_STATUS_POLL;
+	eth_call();
+	// Connection status polling
+	eth_call_id = ETH_CONNECT_POLL;
+	eth_call();
+	if (eth_call_a & 1) {
+		write_string("Connected.\n");
+		return 1;
+	}
+	if (eth_call_a & 2) {
+		write_string("Failed\n");
+		return -1;
+	}
+	return 1;	// RTF?
 }

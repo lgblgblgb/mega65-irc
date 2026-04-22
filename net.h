@@ -23,7 +23,7 @@ extern void net_init ( void );
 extern void net_connect_init ( const byte *ip, const word port );
 extern int  net_pump ( void );
 extern int  net_fetch_byte ( void );
-extern int  net_write ( const byte *buffer, const int size );
+extern int  net_write ( const byte *buffer, const byte size );
 extern void net_do_dhcp ( void );
 
 

@@ -4,7 +4,7 @@ cat <<EOF
 #include "common.h"
 const char build_info[] =
 	"* (C)2026 LGB (Gábor Lénárt) `git config --get remote.origin.url`\n"
-	"* Compiled by `whoami`@`uname -n` at `date`\n"
+	"* Compiled by `whoami`@`uname -n` at `date -R`\n"
 	"* Git `git branch --show-current` `git log | awk '{ print $2 ; exit }'`\n"
 ;
 EOF

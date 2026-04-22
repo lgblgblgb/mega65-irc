@@ -71,7 +71,7 @@ mega65:
 
 xemu:
 	$(MAKE) $(BINMEGA)
-	$(XEMU) -fastboot -prg $(BINMEGA)
+	$(XEMU) -fastboot -prg $(BINMEGA) -ethertap xemu
 
 run:
 	$(MAKE) $(BINUNIX)

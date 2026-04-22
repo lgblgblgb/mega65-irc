@@ -239,6 +239,74 @@ static void do_kbd_stuff ( void )
 }
 
 
+static void do_net_stuff ( void )
+{
+	static int init_sent = false;
+	const int n = net_pump();
+	switch (fsm) {
+		case FSM_OFFLINE:
+			break;
+		case FSM_CONNECT:
+		case FSM_CONNECTED:
+		case FSM_ONLINE:
+			break;
+	}
+	if (n != -1 && (n & 1)) {
+		if (!init_sent) {
+			byte l = strappend(tx_buffer, 0, "USER ");
+			l = strappend(tx_buffer, l, current_nick);
+			l = strappend(tx_buffer, l, " +iw ");
+			l = strappend(tx_buffer, l, current_nick);
+			l = strappend(tx_buffer, l, " :MEGA65 ruleZ\r\nNICK ");
+			l = strappend(tx_buffer, l, current_nick);
+			l = strappend(tx_buffer, l, crlf);
+			write_string("Connected.\n");
+			fsm = FSM_CONNECTED;
+			update_status();
+			// static const char init_cmds[] = "USER lgb +iw lgb :MEGA65 ruleZ\r\nNICK lgbx\r\n";
+			if (net_write((byte*)tx_buffer, l) != -1) {
+				write_colour_string(tx_buffer, CURSOR_COLOUR);
+				init_sent = true;
+			}
+		}
+		// Emptying received data byte-by-byte
+		for (;;) {
+			const int b = net_fetch_byte();
+			if (b < 0)
+				break;
+			if (b == 13 || b == 10) {
+				if (rx_fill) {
+					rx_buffer[rx_fill] = 0;
+#ifndef					MEGA65
+					printf("IRC: new message received %d bytes: %s\n", rx_fill, rx_buffer);
+#endif
+					if (!strncmp("PING ", rx_buffer, 5)) {
+#ifndef						MEGA65
+						puts("IRC: ping message, let's pong it!");
+#endif
+						rx_buffer[1] = 'O';		// change "PING" to PONG with 'I'->'O' change
+						rx_buffer[rx_fill++] = '\r';
+						rx_buffer[rx_fill++] = '\n';
+						net_write((byte*)rx_buffer, rx_fill);	// then transmit as answer ...
+					} else {
+						write_string_utf8((char*)rx_buffer);
+						write_char('\n');
+					}
+					rx_fill = 0;
+				}
+			} else if (rx_fill < sizeof(rx_buffer) - 3) {
+				if (b)
+					rx_buffer[rx_fill++] = b;
+			} else {
+#ifndef				MEGA65
+				printf("IRC: TOO LONG MESSAGE - TRUNCATING\n");
+#endif
+			}
+		}
+	}
+}
+
+
 /* ---- instead of "main", we have the control at "main_entry" after startup ---- */
 
 
@@ -263,7 +331,6 @@ void main_entry ( void )
 #ifdef	MEGA65
 	net_do_dhcp();
 	update_status();		// will clear the "WAIT" message
-#if 1
 	if (PEEK(0xF700) && PEEKW(0xF704) && PEEK(0xF706)) {
 		memcpy(current_ip, (void*)0xF700, 4);
 		current_port = *(word*)0xF704;
@@ -274,9 +341,9 @@ void main_entry ( void )
 		write_char(' ');
 		write_string(current_nick);
 		write_colour_string("\nPress F1 to connect with that config. Or:\n", INSTRUCTION_COLOUR);
-	} else
-		write_colour_string("Hint: run program ircsetup to set up default parameters\n", INSTRUCTION_COLOUR);
-#endif
+	} else {
+		write_colour_string("Hint: run prg 'ircsetup' for default parameters\n", INSTRUCTION_COLOUR);
+	}
 #endif
 	write_colour_string(
 		"Connect a server (no DNS yet): /server IP port YourNick\n"
@@ -285,67 +352,10 @@ void main_entry ( void )
 	);
 	clear_input();	// also initializes input stuff and shows "cursor"
 	consume_keys();	// make sure keyboard is empty
+	// Main client loop
 	for (;;) {
 		do_kbd_stuff();
-		switch (fsm) {
-			case FSM_OFFLINE:
-				break;
-			case FSM_CONNECT:
-			case FSM_CONNECTED:
-			case FSM_ONLINE:
-				break;
-		}
-#ifndef		MEGA65
-		static int init_sent = false;
-		const int n = net_pump();
-		if (n != -1 && (n & 1)) {
-			if (!init_sent) {
-				byte l = strappend(tx_buffer, 0, "USER ");
-				l = strappend(tx_buffer, l, current_nick);
-				l = strappend(tx_buffer, l, " +iw ");
-				l = strappend(tx_buffer, l, current_nick);
-				l = strappend(tx_buffer, l, " :MEGA65 ruleZ\r\nNICK ");
-				l = strappend(tx_buffer, l, current_nick);
-				l = strappend(tx_buffer, l, crlf);
-				write_string("Connected.\n");
-				fsm = FSM_CONNECTED;
-				update_status();
-				// static const char init_cmds[] = "USER lgb +iw lgb :MEGA65 ruleZ\r\nNICK lgbx\r\n";
-				if (net_write((byte*)tx_buffer, l) != -1) {
-					write_colour_string(tx_buffer, CURSOR_COLOUR);
-					init_sent = true;
-				}
-			}
-			// Emptying received data byte-by-byte
-			for (;;) {
-				const int b = net_fetch_byte();
-				if (b < 0)
-					break;
-				if (b == 13 || b == 10) {
-					if (rx_fill) {
-						rx_buffer[rx_fill] = 0;
-						printf("IRC: new message received %d bytes: %s\n", rx_fill, rx_buffer);
-						if (!strncmp("PING ", rx_buffer, 5)) {
-							puts("IRC: ping message, let's pong it!");
-							rx_buffer[1] = 'O';		// change "PING" to PONG with 'I'->'O' change
-							rx_buffer[rx_fill++] = '\r';
-							rx_buffer[rx_fill++] = '\n';
-							net_write((byte*)rx_buffer, rx_fill);	// then transmit as answer ...
-						} else {
-							write_string_utf8((char*)rx_buffer);
-							write_char('\n');
-						}
-						rx_fill = 0;
-					}
-				} else if (rx_fill < sizeof(rx_buffer) - 3) {
-					if (b)
-						rx_buffer[rx_fill++] = b;
-				} else {
-					printf("IRC: TOO LONG MESSAGE - TRUNCATING\n");
-				}
-			}
-		}
-#endif
+		do_net_stuff();
 		arch_refresh();
 #ifndef		MEGA65
 		SDL_Delay(1);
