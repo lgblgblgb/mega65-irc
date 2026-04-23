@@ -267,5 +267,5 @@ int net_pump ( void )
 		write_string("Failed\n");
 		return -1;
 	}
-	return 1;	// RTF?
+	return 1;	// WTF?
 }

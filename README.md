@@ -1,5 +1,7 @@
 # Silly iRC client for MEGA65 using MEGA-IP for TCP/IP networking
 
+**WARNING - NOT FUNCTIONAL YET**
+
 This repository contains a silly iRC client for MEGA65 which can be compiled and
 used on UNIX-like systems as well (SDL2). This allows easier development, since
 most of the main C code is shared between the two versions, only the low level
@@ -56,7 +58,7 @@ the main reasons:
 
 * It contains a 4K long 8x16 pixel "VGA-style" font
 * It contains the ~16K long `eth.bin` embedded (MEGA-IP)
-* C code compiled by `CC65`, is not so short ...
+* C code compiled by `CC65`is not so short ...
 
 ## Source files
 
